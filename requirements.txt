@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pyrebase4
+firebase-admin
+sqlalchemy
+psycopg2-binary
+pydantic
+sqlacodegen
+python-jose
+sqlmodel

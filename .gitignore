@@ -1,0 +1,24 @@
+# Entorno virtual
+venv/
+ENV/
+env/
+# Archivos Python compilados
+*.pyc
+__pycache__/
+# Archivos de configuración y credenciales
+serviceAccountKey.json
+*.db
+*.sqlite3
+# Archivos de logs
+*.log
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+# Migraciones (si usas Alembic)
+migrations/
+
+venv/
+ENV/
+env/
+Lib/
+Scripts/
