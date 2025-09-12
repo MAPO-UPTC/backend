@@ -1,10 +1,11 @@
 fastapi
-uvicorn
+uvicorn[standard]
 pyrebase4
 firebase-admin
 sqlalchemy
 psycopg2-binary
 pydantic
 sqlacodegen
-python-jose
-sqlmodel
+python-jose[cryptography]
+python-multipart
+requests

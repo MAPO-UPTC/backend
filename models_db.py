@@ -1,26 +1,66 @@
-from typing import Optional
 import uuid
 
-from sqlalchemy import PrimaryKeyConstraint, String, Uuid, text
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import Column, ForeignKeyConstraint, PrimaryKeyConstraint, String, Table, Uuid, text
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 class Base(DeclarativeBase):
     pass
 
 
-class User(Base):
-    __tablename__ = 'user'
+class Person(Base):
+    __tablename__ = 'person'
     __table_args__ = (
-        PrimaryKeyConstraint('id', name='user_pk'),
+        PrimaryKeyConstraint('id', name='person_pk'),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, server_default=text('gen_random_uuid()'))
-    first_name: Mapped[str] = mapped_column(String, nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False)
     last_name: Mapped[str] = mapped_column(String, nullable=False)
-    role: Mapped[str] = mapped_column(String, nullable=False, server_default=text("'USER'::character varying"))
+    document_type: Mapped[str] = mapped_column(String, nullable=False)
+    document_number: Mapped[str] = mapped_column(String, nullable=False)
+
+    user: Mapped[list['User']] = relationship('User', back_populates='person')
+
+
+t_product = Table(
+    'product', Base.metadata,
+    Column('id', Uuid, nullable=False, server_default=text('gen_random_uuid()')),
+    Column('name', String, nullable=False),
+    Column('description', String, nullable=False),
+    Column('category_id', Uuid)
+)
+
+
+class Role(Base):
+    __tablename__ = 'role'
+    __table_args__ = (
+        PrimaryKeyConstraint('id', name='role_pk'),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, server_default=text('gen_random_uuid()'))
+    name: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class UserRole(Base):
+    __tablename__ = 'user_role'
+    __table_args__ = (
+        PrimaryKeyConstraint('role_id', 'user_id', name='user_role_pk'),
+    )
+
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
+    role_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
+
+
+class User(Base):
+    __tablename__ = 'user'
+    __table_args__ = (
+        ForeignKeyConstraint(['person_id'], ['person.id'], name='user_person_id_fk'),
+        PrimaryKeyConstraint('id', name='user_pk')
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, server_default=text('gen_random_uuid()'))
+    uid: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, nullable=False)
-    second_first_name: Mapped[Optional[str]] = mapped_column(String)
-    second_last_name: Mapped[Optional[str]] = mapped_column(String)
-    uid: Mapped[Optional[str]] = mapped_column(String)
-    phone_code: Mapped[Optional[str]] = mapped_column(String)
-    phone_number: Mapped[Optional[str]] = mapped_column(String)
+    person_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+
+    person: Mapped['Person'] = relationship('Person', back_populates='user')

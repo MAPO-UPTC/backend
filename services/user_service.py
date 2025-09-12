@@ -1,0 +1,171 @@
+from sqlalchemy.orm import Session
+from constants.role import RoleManager
+from models_db import User, Person, UserRole
+from database import engine
+from schemas.user import SignUpSchema, UserResponse
+# from utils.auth import split_full_name  # Comentado - no se usa sin Google login
+import pyrebase
+from fastapi import HTTPException
+from fastapi.responses import JSONResponse
+import firebase_admin
+from firebase_admin import auth as admin_auth
+import uuid
+
+# Configuración de Firebase (puedes moverla a un archivo de configuración)
+firebaseConfig = {
+    "apiKey": "AIzaSyDCyRrTCoKhf8Mdie8M45oPK2ViZIniK9I",
+    "authDomain": "mapo-c59b6.firebaseapp.com",
+    "projectId": "mapo-c59b6",
+    "storageBucket": "mapo-c59b6.appspot.com",
+    "messagingSenderId": "888526418042",
+    "appId": "1:888526418042:web:07faf8987ffd17c13f0bc3",
+    "measurementId": "G-ZFPK0K0DHW",
+    "databaseURL": ""
+}
+
+firebase = pyrebase.initialize_app(firebaseConfig)
+auth = firebase.auth()
+
+def create_user_service(user_data: SignUpSchema):
+    """
+    Servicio para crear un usuario en Firebase y en la base de datos local.
+    """
+    print(f"Creating account for: {user_data}")
+    try:
+        # Crear usuario en Firebase Auth
+        firebase_user = auth.create_user_with_email_and_password(user_data.email, user_data.password)
+        print("Firebase localId:", firebase_user['localId'])
+        
+        # Guardar usuario en base de datos local
+        with Session(engine) as session:
+            existing_user = session.query(User).filter_by(email=user_data.email).first()
+            if not existing_user:
+                # Primero crear la persona
+                db_person = Person(
+                    name=user_data.name,
+                    last_name=user_data.last_name,
+                    document_type=user_data.document_type,
+                    document_number=user_data.document_number
+                )
+                session.add(db_person)
+                session.flush()  # Para obtener el ID de la persona
+                
+                # Luego crear el usuario
+                db_user = User(
+                    email=user_data.email,
+                    uid=firebase_user['localId'],
+                    person_id=db_person.id
+                )
+                session.add(db_user)
+                session.flush() 
+
+                db_user_role = UserRole(
+                    user_id=db_user.id,
+                    role_id=RoleManager.get_default_role_uuid()
+                )
+                session.add(db_user_role)
+                session.commit()
+                session.refresh(db_user)
+                return {"message": "User created successfully", "user_id": str(db_user.id)}
+            else:
+                raise HTTPException(status_code=400, detail="User already exists")
+    except Exception as e:
+        print("Error al crear usuario en Firebase:", e)
+        raise HTTPException(status_code=400, detail=str(e))
+
+# COMENTADO - Login con Google (no se usará por ahora)
+# def google_login_service(token: str):
+#     """
+#     Servicio para manejar login con Google usando Firebase.
+#     """
+#     print("Google login attempt...")
+#     print("Received token:", token)
+#     try:
+#         decoded_token = admin_auth.verify_id_token(token)
+#         email = decoded_token.get("email")
+#         full_name = decoded_token.get("name", "")
+#         first_name, second_first_name, last_name, second_last_name = split_full_name(full_name)
+#         
+#         print("Decoded token:", decoded_token)
+#         print(f"Email: {email}, First Name: {first_name}, Last Name: {last_name}")
+#         
+#         with Session(engine) as session:
+#             user = session.query(User).filter_by(email=email).first()
+#             if not user:
+#                 # Crear usuario si no existe
+#                 user = User(
+#                     first_name=first_name,
+#                     second_first_name=second_first_name,
+#                     last_name=last_name,
+#                     second_last_name=second_last_name,
+#                     email=email,
+#                     uid=decoded_token.get("uid"),
+#                     role="USER"
+#                 )
+#                 session.add(user)
+#                 session.commit()
+#                 session.refresh(user)
+#             
+#             return {
+#                 "id": str(user.id),
+#                 "email": user.email,
+#                 "first_name": user.first_name,
+#                 "last_name": user.last_name,
+#                 "role": user.role
+#             }
+#     except Exception as e:
+#         print("Error:", e)
+#         raise HTTPException(status_code=401, detail="Token inválido")
+
+def get_users_service():
+    """
+    Servicio para obtener todos los usuarios con sus datos de persona.
+    """
+    with Session(engine) as session:
+        users = session.query(User).join(Person).all()
+        return users
+
+def get_user_by_id_service(user_id: str):
+    """
+    Servicio para obtener un usuario por ID con sus datos de persona.
+    """
+    with Session(engine) as session:
+        user = session.query(User).join(Person).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user
+
+def update_user_service(user_id: str, user_data: dict):
+    """
+    Servicio para actualizar un usuario y sus datos de persona.
+    """
+    with Session(engine) as session:
+        user = session.query(User).join(Person).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Actualizar campos del usuario
+        if 'email' in user_data and user_data['email'] is not None:
+            user.email = user_data['email']
+        
+        # Actualizar campos de la persona
+        if 'person' in user_data and user_data['person'] is not None:
+            person_data = user_data['person']
+            for field, value in person_data.items():
+                if value is not None and hasattr(user.person, field):
+                    setattr(user.person, field, value)
+        
+        session.commit()
+        session.refresh(user)
+        return user
+
+def login_service(email: str, password: str):
+    """
+    Servicio para login con email y contraseña.
+    """
+    print("Attempting login...")
+    try:
+        user = auth.sign_in_with_email_and_password(email, password)
+        return {"message": "Login successful", "idToken": user['idToken']}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Invalid credentials")
