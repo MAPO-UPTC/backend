@@ -1,0 +1,284 @@
+{
+  "apiSpecification": {
+    "baseURL": "http://localhost:8000",
+    "authentication": {
+      "type": "Bearer Token",
+      "header": "Authorization: Bearer {idToken}",
+      "note": "El token se obtiene del endpoint /users/login"
+    },
+    "endpoints": {
+      "authentication": {
+        "signup": {
+          "method": "POST",
+          "path": "/users/signup",
+          "description": "Registrar nuevo usuario",
+          "body": {
+            "email": "string (required)",
+            "password": "string (required)",
+            "name": "string (required)",
+            "last_name": "string (required)",
+            "document_type": "string (required)",
+            "document_number": "string (required)"
+          },
+          "response": {
+            "message": "string",
+            "user_id": "uuid"
+          }
+        },
+        "login": {
+          "method": "POST",
+          "path": "/users/login",
+          "description": "Iniciar sesión",
+          "body": {
+            "email": "string (required)",
+            "password": "string (required)"
+          },
+          "response": {
+            "message": "string",
+            "idToken": "string (JWT token para autenticación)",
+            "user": {
+              "id": "uuid",
+              "email": "string",
+              "name": "string",
+              "last_name": "string",
+              "document_type": "string",
+              "document_number": "string",
+              "roles": ["USER", "ADMIN", "SUPERADMIN"],
+              "permissions": "PermissionMatrix"
+            }
+          }
+        },
+        "validateToken": {
+          "method": "POST",
+          "path": "/users/ping",
+          "description": "Validar token actual",
+          "requiresAuth": true,
+          "response": {
+            "message": "string",
+            "user": "decoded Firebase user"
+          }
+        }
+      },
+      "roleManagement": {
+        "getPermissions": {
+          "method": "GET",
+          "path": "/users/me/permissions",
+          "description": "Obtener permisos y roles actuales",
+          "requiresAuth": true,
+          "response": {
+            "user_id": "uuid",
+            "available_roles": ["USER", "ADMIN", "SUPERADMIN"],
+            "active_role": "string | null",
+            "effective_roles": ["USER", "ADMIN", "SUPERADMIN"],
+            "permissions": "PermissionMatrix"
+          }
+        },
+        "getProfile": {
+          "method": "GET",
+          "path": "/users/me/profile",
+          "description": "Obtener perfil completo del usuario",
+          "requiresAuth": true,
+          "response": {
+            "user": {
+              "id": "uuid",
+              "email": "string",
+              "uid": "string"
+            },
+            "person": {
+              "id": "uuid",
+              "name": "string",
+              "last_name": "string",
+              "document_type": "string",
+              "document_number": "string"
+            },
+            "roles": ["USER", "ADMIN", "SUPERADMIN"]
+          }
+        },
+        "switchRole": {
+          "method": "POST",
+          "path": "/users/me/switch-role",
+          "description": "Cambiar a un rol específico",
+          "requiresAuth": true,
+          "body": {
+            "role": "USER | ADMIN | SUPERADMIN (required)"
+          },
+          "response": {
+            "active_role": "string",
+            "available_roles": ["USER", "ADMIN", "SUPERADMIN"],
+            "permissions": "PermissionMatrix"
+          }
+        },
+        "clearActiveRole": {
+          "method": "POST",
+          "path": "/users/me/clear-active-role",
+          "description": "Limpiar rol activo (usar todos los roles)",
+          "requiresAuth": true,
+          "response": {
+            "message": "string",
+            "available_roles": ["USER", "ADMIN", "SUPERADMIN"]
+          }
+        },
+        "getActiveRole": {
+          "method": "GET",
+          "path": "/users/me/active-role",
+          "description": "Ver rol activo actual",
+          "requiresAuth": true,
+          "response": {
+            "active_role": "string | null",
+            "available_roles": ["USER", "ADMIN", "SUPERADMIN"],
+            "permissions": "PermissionMatrix"
+          }
+        }
+      },
+      "products": {
+        "getProducts": {
+          "method": "GET",
+          "path": "/products/",
+          "description": "Obtener lista de productos",
+          "requiresAuth": true,
+          "requiredPermission": "PRODUCTS.READ",
+          "response": [
+            {
+              "id": "uuid",
+              "name": "string",
+              "description": "string",
+              "category_id": "uuid | null"
+            }
+          ]
+        },
+        "createProduct": {
+          "method": "POST",
+          "path": "/products/",
+          "description": "Crear nuevo producto",
+          "requiresAuth": true,
+          "requiredPermission": "PRODUCTS.CREATE",
+          "body": {
+            "name": "string (required)",
+            "description": "string (required)",
+            "price": "number (optional)",
+            "stock": "number (optional)"
+          },
+          "response": {
+            "message": "string",
+            "product": {
+              "id": "uuid",
+              "name": "string",
+              "description": "string",
+              "category_id": "uuid | null"
+            }
+          }
+        }
+      }
+    },
+    "dataTypes": {
+      "PermissionMatrix": {
+        "description": "Matriz de permisos por entidad y acción",
+        "structure": {
+          "USERS": {
+            "CREATE": "NONE | OWN | CONDITIONAL | ALL",
+            "READ": "NONE | OWN | CONDITIONAL | ALL",
+            "UPDATE": "NONE | OWN | CONDITIONAL | ALL",
+            "DELETE": "NONE | OWN | CONDITIONAL | ALL"
+          },
+          "PRODUCTS": {
+            "CREATE": "NONE | OWN | CONDITIONAL | ALL",
+            "READ": "NONE | OWN | CONDITIONAL | ALL",
+            "UPDATE": "NONE | OWN | CONDITIONAL | ALL",
+            "DELETE": "NONE | OWN | CONDITIONAL | ALL"
+          },
+          "SUPPLIERS": {
+            "CREATE": "NONE | OWN | CONDITIONAL | ALL",
+            "READ": "NONE | OWN | CONDITIONAL | ALL",
+            "UPDATE": "NONE | OWN | CONDITIONAL | ALL",
+            "DELETE": "NONE | OWN | CONDITIONAL | ALL"
+          },
+          "CLIENTS": {
+            "CREATE": "NONE | OWN | CONDITIONAL | ALL",
+            "READ": "NONE | OWN | CONDITIONAL | ALL",
+            "UPDATE": "NONE | OWN | CONDITIONAL | ALL",
+            "DELETE": "NONE | OWN | CONDITIONAL | ALL"
+          },
+          "SALES_ORDERS": {
+            "CREATE": "NONE | OWN | CONDITIONAL | ALL",
+            "READ": "NONE | OWN | CONDITIONAL | ALL",
+            "UPDATE": "NONE | OWN | CONDITIONAL | ALL",
+            "DELETE": "NONE | OWN | CONDITIONAL | ALL"
+          },
+          "INVENTORY_STOCK": {
+            "CREATE": "NONE | OWN | CONDITIONAL | ALL",
+            "READ": "NONE | OWN | CONDITIONAL | ALL",
+            "UPDATE": "NONE | OWN | CONDITIONAL | ALL",
+            "DELETE": "NONE | OWN | CONDITIONAL | ALL"
+          }
+        }
+      }
+    },
+    "enums": {
+      "Role": {
+        "USER": "Usuario básico con permisos limitados",
+        "ADMIN": "Administrador con permisos extendidos",
+        "SUPERADMIN": "Super administrador con todos los permisos"
+      },
+      "Entity": {
+        "USERS": "Entidad de usuarios",
+        "PRODUCTS": "Entidad de productos",
+        "SUPPLIERS": "Entidad de proveedores",
+        "CLIENTS": "Entidad de clientes",
+        "SALES_ORDERS": "Entidad de ventas/órdenes",
+        "INVENTORY_STOCK": "Entidad de inventario/stock"
+      },
+      "Action": {
+        "CREATE": "Crear nuevos registros",
+        "READ": "Leer/consultar registros",
+        "UPDATE": "Actualizar registros existentes",
+        "DELETE": "Eliminar registros"
+      },
+      "PermissionLevel": {
+        "NONE": "Sin permisos",
+        "OWN": "Solo registros propios",
+        "CONDITIONAL": "Permisos condicionales según contexto",
+        "ALL": "Todos los registros"
+      }
+    },
+    "errorHandling": {
+      "401": {
+        "description": "Token inválido o faltante",
+        "action": "Redirigir a login"
+      },
+      "403": {
+        "description": "Permisos insuficientes",
+        "response": {
+          "detail": "Insufficient permissions. Required: ENTITY ACTION. User roles: [ROLES]"
+        }
+      },
+      "404": {
+        "description": "Recurso no encontrado"
+      },
+      "400": {
+        "description": "Datos inválidos en la petición"
+      }
+    },
+    "exampleFlows": {
+      "loginAndGetPermissions": {
+        "step1": "POST /users/login con email y password",
+        "step2": "Guardar idToken del response",
+        "step3": "Usar token en header Authorization: Bearer {idToken}",
+        "step4": "GET /users/me/permissions para obtener roles y permisos",
+        "step5": "Mostrar UI según permisos disponibles"
+      },
+      "switchRoleFlow": {
+        "step1": "GET /users/me/permissions para ver roles disponibles",
+        "step2": "Si available_roles.length > 1, mostrar selector",
+        "step3": "POST /users/me/switch-role con rol seleccionado",
+        "step4": "Actualizar UI según nuevos permisos",
+        "step5": "POST /users/me/clear-active-role para volver a todos los roles"
+      },
+      "protectedActionFlow": {
+        "step1": "Verificar permiso antes de mostrar botón/componente",
+        "step2": "Si tiene permiso, mostrar acción disponible",
+        "step3": "Ejecutar acción con token en header",
+        "step4": "Manejar errores 403 mostrando mensaje apropiado"
+      }
+    }
+  }
+}

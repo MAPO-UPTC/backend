@@ -1,8 +1,9 @@
 from sqlalchemy.orm import Session
 from constants.role import RoleManager
-from models_db import User, Person, UserRole
+from models_db import User, Person, UserRole, Role
 from database import engine
 from schemas.user import SignUpSchema, UserResponse
+from config.permissions import PermissionManager, PermissionLevel
 # from utils.auth import split_full_name  # Comentado - no se usa sin Google login
 import pyrebase
 from fastapi import HTTPException
@@ -161,11 +162,61 @@ def update_user_service(user_id: str, user_data: dict):
 
 def login_service(email: str, password: str):
     """
-    Servicio para login con email y contraseña.
+    Servicio para login con email y contraseña que incluye permisos.
     """
     print("Attempting login...")
     try:
-        user = auth.sign_in_with_email_and_password(email, password)
-        return {"message": "Login successful", "idToken": user['idToken']}
+        # Login en Firebase
+        firebase_user = auth.sign_in_with_email_and_password(email, password)
+        
+        # Obtener usuario de la base de datos
+        with Session(engine) as session:
+            user = session.query(User).join(Person).filter(User.email == email).first()
+            if user:
+                # Obtener roles
+                user_roles = session.query(UserRole).filter_by(user_id=user.id).all()
+                roles = []
+                
+                for user_role in user_roles:
+                    role = session.query(Role).filter_by(id=user_role.role_id).first()
+                    if role:
+                        role_enum = RoleManager.get_role(role.id)
+                        if role_enum:
+                            roles.append(role_enum)
+                
+                # Calcular permisos combinados
+                all_permissions = {}
+                for role in roles:
+                    role_permissions = PermissionManager.get_user_permissions(role)
+                    # Combinar permisos (tomar el más alto)
+                    for entity, actions in role_permissions.items():
+                        if entity not in all_permissions:
+                            all_permissions[entity] = {}
+                        for action, level in actions.items():
+                            current_level = all_permissions[entity].get(action, "NONE")
+                            # Jerarquía: ALL > CONDITIONAL > OWN > NONE
+                            if level == "ALL":
+                                all_permissions[entity][action] = level
+                            elif level == "CONDITIONAL" and current_level != "ALL":
+                                all_permissions[entity][action] = level
+                            elif level == "OWN" and current_level in ["NONE", "OWN"]:
+                                all_permissions[entity][action] = level
+                
+                return {
+                    "message": "Login successful",
+                    "idToken": firebase_user['idToken'],
+                    "user": {
+                        "id": str(user.id),
+                        "email": user.email,
+                        "name": user.person.name,
+                        "last_name": user.person.last_name,
+                        "document_type": user.person.document_type,
+                        "document_number": user.person.document_number,
+                        "roles": [role.value for role in roles],
+                        "permissions": all_permissions
+                    }
+                }
+            
+        return {"message": "Login successful", "idToken": firebase_user['idToken']}
     except Exception as e:
         raise HTTPException(status_code=400, detail="Invalid credentials")

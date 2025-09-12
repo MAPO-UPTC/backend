@@ -87,6 +87,15 @@ class UserUpdate(BaseModel):
     phone_code: Optional[str] = None
     phone_number: Optional[str] = None
 
+# Esquemas para manejo de roles activos
+class SwitchRoleSchema(BaseModel):
+    role: str  # Nombre del rol (USER, ADMIN, SUPERADMIN)
+
+class ActiveRoleResponse(BaseModel):
+    active_role: Optional[str] = None
+    available_roles: list[str]
+    permissions: dict
+
 # Comentado - Login con Google (no se usará por ahora)
 # class GoogleLoginRequest(BaseModel):
 #     token: str

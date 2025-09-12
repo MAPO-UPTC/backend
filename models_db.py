@@ -1,6 +1,7 @@
+from typing import Optional
 import uuid
 
-from sqlalchemy import Column, ForeignKeyConstraint, PrimaryKeyConstraint, String, Table, Uuid, text
+from sqlalchemy import ForeignKeyConstraint, PrimaryKeyConstraint, String, UniqueConstraint, Uuid, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 class Base(DeclarativeBase):
@@ -22,13 +23,17 @@ class Person(Base):
     user: Mapped[list['User']] = relationship('User', back_populates='person')
 
 
-t_product = Table(
-    'product', Base.metadata,
-    Column('id', Uuid, nullable=False, server_default=text('gen_random_uuid()')),
-    Column('name', String, nullable=False),
-    Column('description', String, nullable=False),
-    Column('category_id', Uuid)
-)
+class Product(Base):
+    __tablename__ = 'product'
+    __table_args__ = (
+        PrimaryKeyConstraint('id', name='product_pk'),
+        UniqueConstraint('name', name='product_pk_2')
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, server_default=text('gen_random_uuid()'))
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    category_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid)
 
 
 class Role(Base):
@@ -55,7 +60,8 @@ class User(Base):
     __tablename__ = 'user'
     __table_args__ = (
         ForeignKeyConstraint(['person_id'], ['person.id'], name='user_person_id_fk'),
-        PrimaryKeyConstraint('id', name='user_pk')
+        PrimaryKeyConstraint('id', name='user_pk'),
+        UniqueConstraint('email', name='user_pk_2')
     )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, server_default=text('gen_random_uuid()'))

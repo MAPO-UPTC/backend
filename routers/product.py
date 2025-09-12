@@ -7,7 +7,8 @@ from services.product_service import (
     update_product_service,
     delete_product_service
 )
-from utils.auth import get_current_user
+from utils.auth import get_current_user, require_permission
+from config.permissions import Entity, Action
 from typing import List
 import uuid
 
@@ -16,24 +17,25 @@ router = APIRouter()
 @router.post("/", response_model=dict)
 async def create_product(
     product_data: ProductCreate,
-    current_user=Depends(get_current_user)
+    current_user=Depends(require_permission(Entity.PRODUCTS, Action.CREATE))
 ):
     """
-    Crear un nuevo producto (requiere autenticación).
+    Crear producto - Solo ADMIN y SUPERADMIN pueden crear productos.
     """
+    print(f"Received product data: {product_data}")
     return create_product_service(product_data)
 
 @router.get("/", response_model=List[dict])
 async def get_products():
     """
-    Obtener todos los productos.
+    Obtener todos los productos (público).
     """
     return get_products_service()
 
 @router.get("/{product_id}", response_model=dict)
 async def get_product(product_id: uuid.UUID):
     """
-    Obtener un producto por ID.
+    Obtener un producto por ID (público).
     """
     return get_product_by_id_service(product_id)
 
@@ -41,19 +43,19 @@ async def get_product(product_id: uuid.UUID):
 async def update_product(
     product_id: uuid.UUID,
     product_data: ProductUpdate,
-    current_user=Depends(get_current_user)
+    current_user=Depends(require_permission(Entity.PRODUCTS, Action.UPDATE))
 ):
     """
-    Actualizar un producto (requiere autenticación).
+    Actualizar producto - Solo ADMIN y SUPERADMIN pueden actualizar productos.
     """
     return update_product_service(product_id, product_data)
 
 @router.delete("/{product_id}")
 async def delete_product(
     product_id: uuid.UUID,
-    current_user=Depends(get_current_user)
+    current_user=Depends(require_permission(Entity.PRODUCTS, Action.DELETE))
 ):
     """
-    Eliminar un producto (requiere autenticación).
+    Eliminar producto - Solo SUPERADMIN puede eliminar productos.
     """
     return delete_product_service(product_id)
