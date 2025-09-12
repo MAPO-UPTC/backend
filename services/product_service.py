@@ -15,7 +15,8 @@ def create_product_service(product_data: ProductCreate):
             db_product = Product(
                 name=product_data.name,
                 description=product_data.description,
-                category_id=product_data.category_id
+                category_id=product_data.category_id,
+                image_url=product_data.image_url
             )
             session.add(db_product)
             session.commit()
@@ -27,7 +28,8 @@ def create_product_service(product_data: ProductCreate):
                     "id": str(db_product.id),
                     "name": db_product.name,
                     "description": db_product.description,
-                    "category_id": str(db_product.category_id) if db_product.category_id else None
+                    "category_id": str(db_product.category_id) if db_product.category_id else None,
+                    "image_url": db_product.image_url
                 }
             }
     except Exception as e:
@@ -45,7 +47,8 @@ def get_products_service():
                 "id": str(product.id),
                 "name": product.name,
                 "description": product.description,
-                "category_id": str(product.category_id) if product.category_id else None
+                "category_id": str(product.category_id) if product.category_id else None,
+                "image_url": product.image_url
             }
             for product in products
         ]
@@ -63,7 +66,8 @@ def get_product_by_id_service(product_id: uuid.UUID):
             "id": str(product.id),
             "name": product.name,
             "description": product.description,
-            "category_id": str(product.category_id) if product.category_id else None
+            "category_id": str(product.category_id) if product.category_id else None,
+            "image_url": product.image_url
         }
 
 def update_product_service(product_id: uuid.UUID, product_data: ProductUpdate):
@@ -75,13 +79,12 @@ def update_product_service(product_id: uuid.UUID, product_data: ProductUpdate):
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
         
-        # Actualizar solo los campos que no son None
-        if product_data.name is not None:
-            product.name = product_data.name
-        if product_data.description is not None:
-            product.description = product_data.description
-        if product_data.category_id is not None:
-            product.category_id = product_data.category_id
+        # Actualizar solo los campos que fueron enviados explícitamente
+        update_data = product_data.model_dump(exclude_unset=True)
+        
+        for field, value in update_data.items():
+            if hasattr(product, field):
+                setattr(product, field, value)
         
         session.commit()
         session.refresh(product)
@@ -92,7 +95,8 @@ def update_product_service(product_id: uuid.UUID, product_data: ProductUpdate):
                 "id": str(product.id),
                 "name": product.name,
                 "description": product.description,
-                "category_id": str(product.category_id) if product.category_id else None
+                "category_id": str(product.category_id) if product.category_id else None,
+                "image_url": product.image_url
             }
         }
 

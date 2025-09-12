@@ -34,6 +34,7 @@ class Product(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=False)
     category_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid)
+    image_url: Mapped[Optional[str]] = mapped_column(String)
 
 
 class Role(Base):
