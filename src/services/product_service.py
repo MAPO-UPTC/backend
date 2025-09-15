@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from database import engine
 from models_db import Product
-from schemas.product import ProductCreate, ProductUpdate, ProductResponse
+from schemas.product import ProductCreate, ProductUpdate
 from fastapi import HTTPException
 import uuid
 
@@ -30,14 +30,18 @@ def create_product_service(product_data: ProductCreate):
                     "name": db_product.name,
                     "description": db_product.description,
                     "category_id": (
-                        str(db_product.category_id) if db_product.category_id else None
+                        str(db_product.category_id)
+                        if db_product.category_id
+                        else None
                     ),
                     "image_url": db_product.image_url,
                 },
             }
     except Exception as e:
         print("Error creating product:", e)
-        raise HTTPException(status_code=400, detail=f"Error creating product: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Error creating product: {str(e)}"
+        )
 
 
 def get_products_service():
@@ -65,7 +69,9 @@ def get_product_by_id_service(product_id: uuid.UUID):
     Servicio para obtener un producto por ID.
     """
     with Session(engine) as session:
-        product = session.query(Product).filter(Product.id == product_id).first()
+        product = (
+            session.query(Product).filter(Product.id == product_id).first()
+        )
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
 
@@ -73,7 +79,9 @@ def get_product_by_id_service(product_id: uuid.UUID):
             "id": str(product.id),
             "name": product.name,
             "description": product.description,
-            "category_id": str(product.category_id) if product.category_id else None,
+            "category_id": (
+                str(product.category_id) if product.category_id else None
+            ),
             "image_url": product.image_url,
         }
 
@@ -83,7 +91,9 @@ def update_product_service(product_id: uuid.UUID, product_data: ProductUpdate):
     Servicio para actualizar un producto.
     """
     with Session(engine) as session:
-        product = session.query(Product).filter(Product.id == product_id).first()
+        product = (
+            session.query(Product).filter(Product.id == product_id).first()
+        )
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
 
@@ -116,7 +126,9 @@ def delete_product_service(product_id: uuid.UUID):
     Servicio para eliminar un producto.
     """
     with Session(engine) as session:
-        product = session.query(Product).filter(Product.id == product_id).first()
+        product = (
+            session.query(Product).filter(Product.id == product_id).first()
+        )
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
 

@@ -1,20 +1,23 @@
-from fastapi import Depends, HTTPException, Request
+from fastapi import HTTPException, Request
 from firebase_admin import auth as admin_auth
 from sqlalchemy.orm import Session
 from database import engine
 from models_db import User, Person, UserRole, Role
 from constants.role import RoleManager, RoleEnum
-from config.permissions import PermissionManager, Entity, Action, PermissionLevel
-import uuid
+from config.permissions import (
+    PermissionManager,
+    Entity,
+    Action,
+    PermissionLevel,
+)
 
-# Importar el gestor de roles activos después de las demás importaciones
 import sys
 import os
+from typing import Dict, Optional
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # En-memory storage para roles activos de usuarios
-from typing import Dict, Optional
 
 
 class ActiveRoleManager:
@@ -59,7 +62,9 @@ def get_current_user(request: Request):
     try:
         scheme, token = authorization.split(" ", 1)
         if scheme.lower() != "bearer":
-            raise HTTPException(status_code=401, detail="Invalid authentication scheme")
+            raise HTTPException(
+                status_code=401, detail="Invalid authentication scheme"
+            )
     except ValueError:
         # Si no hay espacio, asumir que es solo el token
         token = authorization
@@ -67,7 +72,7 @@ def get_current_user(request: Request):
     try:
         decoded_token = admin_auth.verify_id_token(token)
         return decoded_token
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
@@ -81,7 +86,9 @@ def get_current_user_from_db(request: Request):
     with Session(engine) as session:
         user = session.query(User).join(Person).filter(User.uid == uid).first()
         if not user:
-            raise HTTPException(status_code=404, detail="User not found in database")
+            raise HTTPException(
+                status_code=404, detail="User not found in database"
+            )
 
         # Obtener roles del usuario
         user_roles = session.query(UserRole).filter_by(user_id=user.id).all()
@@ -114,7 +121,9 @@ def get_effective_roles(user, user_id: str) -> list[RoleEnum]:
         return user.roles
 
 
-def require_permission(entity: Entity, action: Action, allow_own: bool = False):
+def require_permission(
+    entity: Entity, action: Action, allow_own: bool = False
+):
     """
     Dependencia para verificar que el usuario tenga permiso para realizar una acción.
     Considera el rol activo del usuario si está establecido.
@@ -225,13 +234,17 @@ def split_full_name(full_name: str):
     Maneja casos con paréntesis y nombres opcionales.
     """
     # Divide y limpia cada parte
-    parts = [p.replace("(", "").replace(")", "") for p in full_name.strip().split()]
+    parts = [
+        p.replace("(", "").replace(")", "") for p in full_name.strip().split()
+    ]
     # Elimina partes vacías
     parts = [p for p in parts if p]
 
     first_name = parts[0] if len(parts) > 0 else ""
     second_first_name = parts[1] if len(parts) > 3 else None
-    last_name = parts[-2] if len(parts) > 2 else (parts[1] if len(parts) == 2 else "")
+    last_name = (
+        parts[-2] if len(parts) > 2 else (parts[1] if len(parts) == 2 else "")
+    )
     second_last_name = parts[-1] if len(parts) > 2 else None
 
     return first_name, second_first_name, last_name, second_last_name

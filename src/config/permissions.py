@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Dict, List, Set
+from typing import Dict, List
 from constants.role import RoleEnum
 
 
@@ -27,7 +27,9 @@ class PermissionLevel(str, Enum):
 
 
 # Configuración completa de permisos
-PERMISSIONS_CONFIG: Dict[Entity, Dict[Action, Dict[RoleEnum, PermissionLevel]]] = {
+PERMISSIONS_CONFIG: Dict[
+    Entity, Dict[Action, Dict[RoleEnum, PermissionLevel]]
+] = {
     Entity.USERS: {
         Action.CREATE: {
             RoleEnum.USER: PermissionLevel.NONE,
@@ -180,11 +182,15 @@ class PermissionManager:
             return PermissionLevel.NONE
 
     @staticmethod
-    def can_perform_action(role: RoleEnum, entity: Entity, action: Action) -> bool:
+    def can_perform_action(
+        role: RoleEnum, entity: Entity, action: Action
+    ) -> bool:
         """
         Verifica si un rol puede realizar una acción (cualquier nivel excepto NONE).
         """
-        permission_level = PermissionManager.has_permission(role, entity, action)
+        permission_level = PermissionManager.has_permission(
+            role, entity, action
+        )
         return permission_level != PermissionLevel.NONE
 
     @staticmethod
@@ -200,12 +206,16 @@ class PermissionManager:
                 permission_level = PermissionManager.has_permission(
                     role, entity, action
                 )
-                permissions[entity.value][action.value] = permission_level.value
+                permissions[entity.value][
+                    action.value
+                ] = permission_level.value
 
         return permissions
 
     @staticmethod
-    def get_allowed_entities_for_action(role: RoleEnum, action: Action) -> List[Entity]:
+    def get_allowed_entities_for_action(
+        role: RoleEnum, action: Action
+    ) -> List[Entity]:
         """
         Obtiene todas las entidades en las que un rol puede realizar una acción específica.
         """

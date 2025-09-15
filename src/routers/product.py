@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from schemas.product import ProductCreate, ProductUpdate, ProductResponse
+from schemas.product import ProductCreate, ProductUpdate
 from services.product_service import (
     create_product_service,
     get_products_service,
@@ -7,7 +7,7 @@ from services.product_service import (
     update_product_service,
     delete_product_service,
 )
-from utils.auth import get_current_user, require_permission
+from utils.auth import require_permission
 from config.permissions import Entity, Action
 from typing import List
 import uuid

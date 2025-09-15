@@ -18,10 +18,9 @@ from utils.auth import (
     get_current_user,
     get_current_user_from_db,
     get_user_with_permissions,
-    require_permission,
     ActiveRoleManager,
 )
-from config.permissions import Entity, Action, PermissionManager
+from config.permissions import PermissionManager
 from constants.role import RoleEnum
 from typing import List
 import uuid
@@ -63,7 +62,9 @@ async def get_user(user_id: uuid.UUID, current_user=Depends(get_current_user)):
 
 @router.put("/{user_id}", response_model=UserResponse)
 async def update_user(
-    user_id: uuid.UUID, user_data: UserUpdate, current_user=Depends(get_current_user)
+    user_id: uuid.UUID,
+    user_data: UserUpdate,
+    current_user=Depends(get_current_user),
 ):
     """
     Actualizar un usuario (requiere autenticación).

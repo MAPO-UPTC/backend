@@ -14,7 +14,12 @@ from routers import user, product
 
 # Configuración y logging
 from config.settings import settings
-from utils.logging_config import logger, log_startup_info, log_request, log_error
+from utils.logging_config import (
+    logger,
+    log_startup_info,
+    log_request,
+    log_error,
+)
 
 if not firebase_admin._apps:
     try:
@@ -91,7 +96,9 @@ async def log_requests(request: Request, call_next):
         return response
     except Exception as e:
         process_time = time.time() - start_time
-        log_error(e, f"Error procesando request {request.method} {request.url}")
+        log_error(
+            e, f"Error procesando request {request.method} {request.url}"
+        )
 
         return JSONResponse(
             status_code=500, content={"detail": "Internal server error"}
@@ -168,7 +175,13 @@ if __name__ == "__main__":
     # Configuración condicional para desarrollo vs producción
     if settings.ENVIRONMENT == "development":
         uvicorn.run(
-            "main:app", host="0.0.0.0", port=8000, reload=True, log_level="debug"
+            "main:app",
+            host="0.0.0.0",
+            port=8000,
+            reload=True,
+            log_level="debug",
         )
     else:
-        uvicorn.run("main:app", host="0.0.0.0", port=8000, workers=4, log_level="info")
+        uvicorn.run(
+            "main:app", host="0.0.0.0", port=8000, workers=4, log_level="info"
+        )
