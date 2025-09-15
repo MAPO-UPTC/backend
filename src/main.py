@@ -1,24 +1,25 @@
-import uvicorn
 import time
+
+import firebase_admin
+import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from models_db import Base
-from database import engine
-import firebase_admin
 from firebase_admin import credentials
 from sqlalchemy import text
 
-# Routers
-from routers import user, product
-
 # Configuración y logging
 from config.settings import settings
+from database import engine
+from models_db import Base
+
+# Routers
+from routers import product, user
 from utils.logging_config import (
-    logger,
-    log_startup_info,
-    log_request,
     log_error,
+    log_request,
+    log_startup_info,
+    logger,
 )
 
 if not firebase_admin._apps:

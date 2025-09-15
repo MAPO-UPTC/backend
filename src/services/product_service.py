@@ -1,9 +1,11 @@
+import uuid
+
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
+
 from database import engine
 from models_db import Product
 from schemas.product import ProductCreate, ProductUpdate
-from fastapi import HTTPException
-import uuid
 
 
 def create_product_service(product_data: ProductCreate):

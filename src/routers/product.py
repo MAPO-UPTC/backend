@@ -1,16 +1,18 @@
+import uuid
+from typing import List
+
 from fastapi import APIRouter, Depends
+
+from config.permissions import Action, Entity
 from schemas.product import ProductCreate, ProductUpdate
 from services.product_service import (
     create_product_service,
-    get_products_service,
-    get_product_by_id_service,
-    update_product_service,
     delete_product_service,
+    get_product_by_id_service,
+    get_products_service,
+    update_product_service,
 )
 from utils.auth import require_permission
-from config.permissions import Entity, Action
-from typing import List
-import uuid
 
 router = APIRouter()
 

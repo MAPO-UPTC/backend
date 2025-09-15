@@ -1,29 +1,31 @@
+import uuid
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException
+
+from config.permissions import PermissionManager
+from constants.role import RoleEnum
 from schemas.user import (
-    SignUpSchema,
+    ActiveRoleResponse,
     LoginSchema,
+    SignUpSchema,
+    SwitchRoleSchema,
     UserResponse,
     UserUpdate,
-    SwitchRoleSchema,
-    ActiveRoleResponse,
 )
 from services.user_service import (
     create_user_service,
-    get_users_service,
     get_user_by_id_service,
-    update_user_service,
+    get_users_service,
     login_service,
+    update_user_service,
 )
 from utils.auth import (
+    ActiveRoleManager,
     get_current_user,
     get_current_user_from_db,
     get_user_with_permissions,
-    ActiveRoleManager,
 )
-from config.permissions import PermissionManager
-from constants.role import RoleEnum
-from typing import List
-import uuid
 
 router = APIRouter()
 

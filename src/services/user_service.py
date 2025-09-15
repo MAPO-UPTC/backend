@@ -1,16 +1,16 @@
-from sqlalchemy.orm import Session
-from constants.role import RoleManager
-from models_db import User, Person, UserRole, Role
-from database import engine
-from schemas.user import SignUpSchema
-from config.permissions import PermissionManager
-
 # from utils.auth import split_full_name  # Comentado - no se usa sin Google login
 import pyrebase
 from fastapi import HTTPException
+from sqlalchemy.orm import Session
+
+from config.permissions import PermissionManager
 
 # Configuración de Firebase usando variables de entorno
 from config.settings import settings
+from constants.role import RoleManager
+from database import engine
+from models_db import Person, Role, User, UserRole
+from schemas.user import SignUpSchema
 
 firebaseConfig = settings.get_firebase_web_config()
 

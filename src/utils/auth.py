@@ -1,14 +1,15 @@
+import os
+import sys
+from typing import Dict, Optional
+
 from fastapi import HTTPException, Request
 from firebase_admin import auth as admin_auth
 from sqlalchemy.orm import Session
-from database import engine
-from models_db import User, Person, UserRole, Role
-from constants.role import RoleManager, RoleEnum
-from config.permissions import PermissionManager, Entity, Action, PermissionLevel
 
-import sys
-import os
-from typing import Dict, Optional
+from config.permissions import Action, Entity, PermissionLevel, PermissionManager
+from constants.role import RoleEnum, RoleManager
+from database import engine
+from models_db import Person, Role, User, UserRole
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
