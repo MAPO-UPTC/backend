@@ -1,0 +1,113 @@
+# ====================================
+# PRODUCCIÓN - DOCKER COMPOSE
+# ====================================
+version: '3.8'
+
+services:
+  # ====================================
+  # APLICACIÓN MAPO BACKEND - PRODUCCIÓN
+  # ====================================
+  app:
+    build: .
+    container_name: mapo-backend-prod
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - LOG_LEVEL=info
+      - WORKERS=4
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+    networks:
+      - mapo-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ====================================
+  # BASE DE DATOS POSTGRESQL - PRODUCCIÓN
+  # ====================================
+  db:
+    image: postgres:15-alpine
+    container_name: mapo-postgres-prod
+    environment:
+      POSTGRES_DB: mapo-prod
+      POSTGRES_USER: mapo
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mapo -d mapo-prod"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      - mapo-network
+
+  # ====================================
+  # NGINX - PROXY REVERSO
+  # ====================================
+  nginx:
+    image: nginx:alpine
+    container_name: mapo-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - app
+    restart: always
+    networks:
+      - mapo-network
+
+  # ====================================
+  # REDIS PARA CACHE
+  # ====================================
+  redis:
+    image: redis:7-alpine
+    container_name: mapo-redis-prod
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_prod:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+    networks:
+      - mapo-network
+
+# ====================================
+# VOLÚMENES PERSISTENTES
+# ====================================
+volumes:
+  postgres_data_prod:
+    driver: local
+  redis_data_prod:
+    driver: local
+
+# ====================================
+# RED PERSONALIZADA
+# ====================================
+networks:
+  mapo-network:
+    driver: bridge

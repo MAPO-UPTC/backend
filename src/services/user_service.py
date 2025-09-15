@@ -12,17 +12,10 @@ import firebase_admin
 from firebase_admin import auth as admin_auth
 import uuid
 
-# Configuración de Firebase (puedes moverla a un archivo de configuración)
-firebaseConfig = {
-    "apiKey": "AIzaSyDCyRrTCoKhf8Mdie8M45oPK2ViZIniK9I",
-    "authDomain": "mapo-c59b6.firebaseapp.com",
-    "projectId": "mapo-c59b6",
-    "storageBucket": "mapo-c59b6.appspot.com",
-    "messagingSenderId": "888526418042",
-    "appId": "1:888526418042:web:07faf8987ffd17c13f0bc3",
-    "measurementId": "G-ZFPK0K0DHW",
-    "databaseURL": ""
-}
+# Configuración de Firebase usando variables de entorno
+from config.settings import settings
+
+firebaseConfig = settings.get_firebase_web_config()
 
 firebase = pyrebase.initialize_app(firebaseConfig)
 auth = firebase.auth()

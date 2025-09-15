@@ -1,0 +1,104 @@
+# ====================================
+# DOCKERIGNORE - OPTIMIZAR IMAGEN DOCKER
+# ====================================
+
+# ====================================
+# ARCHIVOS DE PYTHON
+# ====================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ====================================
+# ENTORNO VIRTUAL
+# ====================================
+venv/
+ENV/
+env/
+Lib/
+Scripts/
+Include/
+pyvenv.cfg
+
+# ====================================
+# VARIABLES DE ENTORNO Y SECRETS
+# ====================================
+.env
+.env.*
+!.env.example
+serviceAccountKey.json
+firebase-credentials.json
+*.pem
+*.key
+
+# ====================================
+# ARCHIVOS DE DESARROLLO
+# ====================================
+.git/
+.gitignore
+.vscode/
+.idea/
+*.md
+!README.md
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# ====================================
+# ARCHIVOS DE TESTING
+# ====================================
+test_*.py
+*_test.py
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ====================================
+# ARCHIVOS DE SISTEMA
+# ====================================
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+*.swo
+
+# ====================================
+# DOCUMENTACIÓN Y EJEMPLOS
+# ====================================
+docs/
+examples/
+*.md
+!README.md
+HTTP_EXAMPLES.md
+FRONTEND_INTEGRATION_GUIDE.md
+EXECUTIVE_SUMMARY.md
+ROLE_SWITCHING_GUIDE.md
+PRODUCTS_IMAGE_URL_DOCS.md
+
+# ====================================
+# ARCHIVOS DE CONFIGURACIÓN DE DESARROLLO
+# ====================================
+.flake8
+.mypy.ini
+pyproject.toml
+setup.cfg

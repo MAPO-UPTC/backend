@@ -49,7 +49,7 @@ PERMISSIONS_CONFIG: Dict[Entity, Dict[Action, Dict[RoleEnum, PermissionLevel]]] 
     Entity.PRODUCTS: {
         Action.CREATE: {
             RoleEnum.USER: PermissionLevel.NONE,
-            RoleEnum.ADMIN: PermissionLevel.ALL,
+            RoleEnum.ADMIN: PermissionLevel.NONE,
             RoleEnum.SUPERADMIN: PermissionLevel.ALL
         },
         Action.READ: {

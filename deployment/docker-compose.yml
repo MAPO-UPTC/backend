@@ -1,0 +1,89 @@
+# ====================================
+# DOCKER COMPOSE - DESARROLLO Y TESTING
+# ====================================
+version: '3.8'
+
+services:
+  # ====================================
+  # APLICACIÓN MAPO BACKEND
+  # ====================================
+  app:
+    build: .
+    container_name: mapo-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      # Variables de entorno se cargan desde .env
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # Solo para desarrollo - hot reload
+      - .:/app
+    restart: unless-stopped
+    networks:
+      - mapo-network
+
+  # ====================================
+  # BASE DE DATOS POSTGRESQL
+  # ====================================
+  db:
+    image: postgres:15-alpine
+    container_name: mapo-postgres
+    environment:
+      POSTGRES_DB: mapo-dev
+      POSTGRES_USER: mapo
+      POSTGRES_PASSWORD: a123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mapo -d mapo-dev"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - mapo-network
+
+  # ====================================
+  # REDIS PARA CACHE (OPCIONAL)
+  # ====================================
+  redis:
+    image: redis:7-alpine
+    container_name: mapo-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - mapo-network
+
+# ====================================
+# VOLÚMENES PERSISTENTES
+# ====================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ====================================
+# RED PERSONALIZADA
+# ====================================
+networks:
+  mapo-network:
+    driver: bridge

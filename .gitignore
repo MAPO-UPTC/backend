@@ -32,13 +32,29 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Archivos de configuración y credenciales
+# ====================================
+# ARCHIVOS DE CONFIGURACIÓN Y CREDENCIALES
+# ====================================
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Credenciales de Firebase
 serviceAccountKey.json
+firebase-credentials.json
+firebase-admin-sdk.json
+
+# Base de datos
 *.db
 *.sqlite3
-.env
-.env.local
-.env.production
+database.db
+
+# Claves y certificados
+*.pem
+*.key
+*.crt
+*.p12
 
 # Archivos de logs
 *.log
