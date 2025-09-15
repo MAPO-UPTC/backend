@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 import uuid
 
+
 class UserEntities(BaseModel):
     id: uuid.UUID
     first_name: str

@@ -1,19 +1,33 @@
 from fastapi import APIRouter, Depends, HTTPException
-from schemas.user import SignUpSchema, LoginSchema, UserResponse, UserUpdate, SwitchRoleSchema, ActiveRoleResponse
+from schemas.user import (
+    SignUpSchema,
+    LoginSchema,
+    UserResponse,
+    UserUpdate,
+    SwitchRoleSchema,
+    ActiveRoleResponse,
+)
 from services.user_service import (
-    create_user_service, 
-    get_users_service, 
+    create_user_service,
+    get_users_service,
     get_user_by_id_service,
     update_user_service,
-    login_service
+    login_service,
 )
-from utils.auth import get_current_user, get_current_user_from_db, get_user_with_permissions, require_permission, ActiveRoleManager
+from utils.auth import (
+    get_current_user,
+    get_current_user_from_db,
+    get_user_with_permissions,
+    require_permission,
+    ActiveRoleManager,
+)
 from config.permissions import Entity, Action, PermissionManager
 from constants.role import RoleEnum
 from typing import List
 import uuid
 
 router = APIRouter()
+
 
 @router.post("/signup", response_model=dict)
 async def create_user(user_data: SignUpSchema):
@@ -22,12 +36,14 @@ async def create_user(user_data: SignUpSchema):
     """
     return create_user_service(user_data)
 
+
 @router.post("/login")
 async def login(user_data: LoginSchema):
     """
     Iniciar sesión con email y contraseña.
     """
     return login_service(user_data.email, user_data.password)
+
 
 @router.get("/", response_model=List[UserResponse])
 async def get_users(current_user=Depends(get_current_user)):
@@ -36,6 +52,7 @@ async def get_users(current_user=Depends(get_current_user)):
     """
     return get_users_service()
 
+
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user(user_id: uuid.UUID, current_user=Depends(get_current_user)):
     """
@@ -43,11 +60,10 @@ async def get_user(user_id: uuid.UUID, current_user=Depends(get_current_user)):
     """
     return get_user_by_id_service(str(user_id))
 
+
 @router.put("/{user_id}", response_model=UserResponse)
 async def update_user(
-    user_id: uuid.UUID, 
-    user_data: UserUpdate,
-    current_user=Depends(get_current_user)
+    user_id: uuid.UUID, user_data: UserUpdate, current_user=Depends(get_current_user)
 ):
     """
     Actualizar un usuario (requiere autenticación).
@@ -55,12 +71,14 @@ async def update_user(
     update_data = user_data.dict(exclude_unset=True)
     return update_user_service(str(user_id), update_data)
 
+
 @router.post("/ping")
 async def validate_token(current_user=Depends(get_current_user)):
     """
     Validar token y obtener información del usuario actual.
     """
     return {"message": "Token is valid", "user": current_user}
+
 
 @router.get("/me/permissions")
 async def get_my_permissions(user=Depends(get_user_with_permissions)):
@@ -73,8 +91,9 @@ async def get_my_permissions(user=Depends(get_user_with_permissions)):
         "available_roles": [role.value for role in user.roles],
         "active_role": user.active_role.value if user.active_role else None,
         "effective_roles": [role.value for role in user.effective_roles],
-        "permissions": user.permissions
+        "permissions": user.permissions,
     }
+
 
 @router.get("/me/profile")
 async def get_my_profile(user=Depends(get_current_user_from_db)):
@@ -82,60 +101,57 @@ async def get_my_profile(user=Depends(get_current_user_from_db)):
     Obtener perfil completo del usuario actual.
     """
     return {
-        "user": {
-            "id": str(user.id),
-            "email": user.email,
-            "uid": user.uid
-        },
+        "user": {"id": str(user.id), "email": user.email, "uid": user.uid},
         "person": {
             "id": str(user.person.id),
             "name": user.person.name,
             "last_name": user.person.last_name,
             "document_type": user.person.document_type,
-            "document_number": user.person.document_number
+            "document_number": user.person.document_number,
         },
-        "roles": [role.value for role in user.roles]
+        "roles": [role.value for role in user.roles],
     }
+
 
 @router.post("/me/switch-role", response_model=ActiveRoleResponse)
 async def switch_role(
-    role_data: SwitchRoleSchema,
-    user=Depends(get_current_user_from_db)
+    role_data: SwitchRoleSchema, user=Depends(get_current_user_from_db)
 ):
     """
     Cambiar el rol activo del usuario.
     El usuario solo puede cambiar a un rol que tenga asignado.
     """
     user_id = str(user.id)
-    
+
     # Verificar que el rol solicitado existe
     try:
         requested_role = RoleEnum(role_data.role)
     except ValueError:
         raise HTTPException(
-            status_code=400, 
-            detail=f"Invalid role: {role_data.role}. Valid roles: {[r.value for r in RoleEnum]}"
+            status_code=400,
+            detail=f"Invalid role: {role_data.role}. Valid roles: {[r.value for r in RoleEnum]}",
         )
-    
+
     # Verificar que el usuario tiene este rol asignado
     if requested_role not in user.roles:
         available_roles = [role.value for role in user.roles]
         raise HTTPException(
             status_code=403,
-            detail=f"User does not have role '{role_data.role}'. Available roles: {available_roles}"
+            detail=f"User does not have role '{role_data.role}'. Available roles: {available_roles}",
         )
-    
+
     # Establecer el rol activo
     ActiveRoleManager.set_active_role(user_id, requested_role)
-    
+
     # Calcular permisos para el nuevo rol activo
     permissions = PermissionManager.get_user_permissions(requested_role)
-    
+
     return ActiveRoleResponse(
         active_role=requested_role.value,
         available_roles=[role.value for role in user.roles],
-        permissions=permissions
+        permissions=permissions,
     )
+
 
 @router.post("/me/clear-active-role")
 async def clear_active_role(user=Depends(get_current_user_from_db)):
@@ -145,11 +161,12 @@ async def clear_active_role(user=Depends(get_current_user_from_db)):
     """
     user_id = str(user.id)
     ActiveRoleManager.clear_active_role(user_id)
-    
+
     return {
         "message": "Active role cleared. Now using all assigned roles.",
-        "available_roles": [role.value for role in user.roles]
+        "available_roles": [role.value for role in user.roles],
     }
+
 
 @router.get("/me/active-role", response_model=ActiveRoleResponse)
 async def get_active_role(user=Depends(get_user_with_permissions)):
@@ -159,8 +176,9 @@ async def get_active_role(user=Depends(get_user_with_permissions)):
     return ActiveRoleResponse(
         active_role=user.active_role.value if user.active_role else None,
         available_roles=[role.value for role in user.roles],
-        permissions=user.permissions
+        permissions=user.permissions,
     )
+
 
 # COMENTADO - Login con Google (no se usará por ahora)
 # @router.post("/auth/google")
