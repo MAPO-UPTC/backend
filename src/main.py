@@ -96,9 +96,7 @@ async def log_requests(request: Request, call_next):
         return response
     except Exception as e:
         process_time = time.time() - start_time
-        log_error(
-            e, f"Error procesando request {request.method} {request.url}"
-        )
+        log_error(e, f"Error procesando request {request.method} {request.url}")
 
         return JSONResponse(
             status_code=500, content={"detail": "Internal server error"}
@@ -182,6 +180,4 @@ if __name__ == "__main__":
             log_level="debug",
         )
     else:
-        uvicorn.run(
-            "main:app", host="0.0.0.0", port=8000, workers=4, log_level="info"
-        )
+        uvicorn.run("main:app", host="0.0.0.0", port=8000, workers=4, log_level="info")

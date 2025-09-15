@@ -112,9 +112,7 @@ def log_permission_check(user_id: str, action: str, entity: str, result: bool):
     Log verificaciones de permisos.
     """
     status = "ALLOWED" if result else "DENIED"
-    logger.info(
-        f"PERMISSION - User {user_id}: {action} on {entity} - {status}"
-    )
+    logger.info(f"PERMISSION - User {user_id}: {action} on {entity} - {status}")
 
 
 def log_database_operation(operation: str, table: str, user_id: str = None):

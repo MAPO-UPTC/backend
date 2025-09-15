@@ -59,9 +59,7 @@ class Role(Base):
 
 class UserRole(Base):
     __tablename__ = "user_role"
-    __table_args__ = (
-        PrimaryKeyConstraint("role_id", "user_id", name="user_role_pk"),
-    )
+    __table_args__ = (PrimaryKeyConstraint("role_id", "user_id", name="user_role_pk"),)
 
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
     role_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
@@ -70,9 +68,7 @@ class UserRole(Base):
 class User(Base):
     __tablename__ = "user"
     __table_args__ = (
-        ForeignKeyConstraint(
-            ["person_id"], ["person.id"], name="user_person_id_fk"
-        ),
+        ForeignKeyConstraint(["person_id"], ["person.id"], name="user_person_id_fk"),
         PrimaryKeyConstraint("id", name="user_pk"),
         UniqueConstraint("email", name="user_pk_2"),
     )

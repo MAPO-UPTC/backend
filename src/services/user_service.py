@@ -32,9 +32,7 @@ def create_user_service(user_data: SignUpSchema):
 
         # Guardar usuario en base de datos local
         with Session(engine) as session:
-            existing_user = (
-                session.query(User).filter_by(email=user_data.email).first()
-            )
+            existing_user = session.query(User).filter_by(email=user_data.email).first()
             if not existing_user:
                 # Primero crear la persona
                 db_person = Person(
@@ -67,9 +65,7 @@ def create_user_service(user_data: SignUpSchema):
                     "user_id": str(db_user.id),
                 }
             else:
-                raise HTTPException(
-                    status_code=400, detail="User already exists"
-                )
+                raise HTTPException(status_code=400, detail="User already exists")
     except Exception as e:
         print("Error al crear usuario en Firebase:", e)
         raise HTTPException(status_code=400, detail=str(e))
@@ -134,9 +130,7 @@ def get_user_by_id_service(user_id: str):
     Servicio para obtener un usuario por ID con sus datos de persona.
     """
     with Session(engine) as session:
-        user = (
-            session.query(User).join(Person).filter(User.id == user_id).first()
-        )
+        user = session.query(User).join(Person).filter(User.id == user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         return user
@@ -147,9 +141,7 @@ def update_user_service(user_id: str, user_data: dict):
     Servicio para actualizar un usuario y sus datos de persona.
     """
     with Session(engine) as session:
-        user = (
-            session.query(User).join(Person).filter(User.id == user_id).first()
-        )
+        user = session.query(User).join(Person).filter(User.id == user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
@@ -180,25 +172,14 @@ def login_service(email: str, password: str):
 
         # Obtener usuario de la base de datos
         with Session(engine) as session:
-            user = (
-                session.query(User)
-                .join(Person)
-                .filter(User.email == email)
-                .first()
-            )
+            user = session.query(User).join(Person).filter(User.email == email).first()
             if user:
                 # Obtener roles
-                user_roles = (
-                    session.query(UserRole).filter_by(user_id=user.id).all()
-                )
+                user_roles = session.query(UserRole).filter_by(user_id=user.id).all()
                 roles = []
 
                 for user_role in user_roles:
-                    role = (
-                        session.query(Role)
-                        .filter_by(id=user_role.role_id)
-                        .first()
-                    )
+                    role = session.query(Role).filter_by(id=user_role.role_id).first()
                     if role:
                         role_enum = RoleManager.get_role(role.id)
                         if role_enum:
@@ -207,24 +188,17 @@ def login_service(email: str, password: str):
                 # Calcular permisos combinados
                 all_permissions = {}
                 for role in roles:
-                    role_permissions = PermissionManager.get_user_permissions(
-                        role
-                    )
+                    role_permissions = PermissionManager.get_user_permissions(role)
                     # Combinar permisos (tomar el más alto)
                     for entity, actions in role_permissions.items():
                         if entity not in all_permissions:
                             all_permissions[entity] = {}
                         for action, level in actions.items():
-                            current_level = all_permissions[entity].get(
-                                action, "NONE"
-                            )
+                            current_level = all_permissions[entity].get(action, "NONE")
                             # Jerarquía: ALL > CONDITIONAL > OWN > NONE
                             if level == "ALL":
                                 all_permissions[entity][action] = level
-                            elif (
-                                level == "CONDITIONAL"
-                                and current_level != "ALL"
-                            ):
+                            elif level == "CONDITIONAL" and current_level != "ALL":
                                 all_permissions[entity][action] = level
                             elif level == "OWN" and current_level in [
                                 "NONE",

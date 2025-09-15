@@ -46,9 +46,7 @@ class RoleManager:
     @classmethod
     def get_all_roles(cls) -> list[tuple[RoleEnum, uuid.UUID]]:
         """Obtiene todos los roles con sus UUIDs"""
-        return [
-            (role, uuid_val) for role, uuid_val in cls.ROLE_TO_UUID.items()
-        ]
+        return [(role, uuid_val) for role, uuid_val in cls.ROLE_TO_UUID.items()]
 
     @classmethod
     def is_valid_role(cls, role: str) -> bool:
