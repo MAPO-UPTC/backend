@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 
 
 class TestUserEndpoints:
@@ -50,4 +51,8 @@ class TestProductEndpoints:
     def test_get_product_by_id_not_found(self, client):
         """Test get product by non-existent ID"""
         response = client.get("/products/999")
-        assert response.status_code in [404, 401, 422]  # Not found, unauthorized, or validation error
+        assert response.status_code in [
+            404,
+            401,
+            422,
+        ]  # Not found, unauthorized, or validation error

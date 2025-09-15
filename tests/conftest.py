@@ -1,17 +1,20 @@
 import os
 import sys
+
 import pytest
 from fastapi.testclient import TestClient
 
 # Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from src.main import app
+
 
 @pytest.fixture
 def client():
     """Test client fixture for FastAPI app"""
     return TestClient(app)
+
 
 @pytest.fixture
 def test_user_data():
@@ -22,8 +25,9 @@ def test_user_data():
         "document_type": "CC",
         "document_number": "12345678",
         "email": "test@example.com",
-        "password": "testpass123"
+        "password": "testpass123",
     }
+
 
 @pytest.fixture
 def test_product_data():
@@ -34,5 +38,5 @@ def test_product_data():
         "price": 29.99,
         "stock": 100,
         "category": "Test Category",
-        "image_url": "https://example.com/image.jpg"
+        "image_url": "https://example.com/image.jpg",
     }
