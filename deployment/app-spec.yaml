@@ -1,0 +1,115 @@
+# ====================================
+# DIGITALOCEAN APP PLATFORM SPEC
+# ====================================
+# Especificación para despliegue en DigitalOcean App Platform
+
+name: mapo-backend-api
+region: nyc1
+
+services:
+- name: api
+  # Docker image desde container registry
+  image:
+    registry_type: DOCR
+    repository: mapo-backend
+    tag: latest
+  
+  # Configuración del servicio
+  http_port: 8000
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  
+  # Variables de entorno
+  envs:
+  - key: ENVIRONMENT
+    value: production
+  - key: DEBUG
+    value: "false"
+  - key: PYTHONPATH
+    value: /app/src
+  - key: SECRET_KEY
+    value: ${SECRET_KEY}
+    type: SECRET
+  - key: DATABASE_URL
+    value: ${DATABASE_URL}
+    type: SECRET
+  - key: FIREBASE_PROJECT_ID
+    value: ${FIREBASE_PROJECT_ID}
+    type: SECRET
+  - key: FIREBASE_PRIVATE_KEY
+    value: ${FIREBASE_PRIVATE_KEY}
+    type: SECRET
+  - key: FIREBASE_CLIENT_EMAIL
+    value: ${FIREBASE_CLIENT_EMAIL}
+    type: SECRET
+  - key: FIREBASE_API_KEY
+    value: ${FIREBASE_API_KEY}
+    type: SECRET
+  - key: FIREBASE_AUTH_DOMAIN
+    value: ${FIREBASE_AUTH_DOMAIN}
+    type: SECRET
+  - key: FIREBASE_STORAGE_BUCKET
+    value: ${FIREBASE_STORAGE_BUCKET}
+    type: SECRET
+  - key: FIREBASE_MESSAGING_SENDER_ID
+    value: ${FIREBASE_MESSAGING_SENDER_ID}
+    type: SECRET
+  - key: FIREBASE_APP_ID
+    value: ${FIREBASE_APP_ID}
+    type: SECRET
+  - key: ALLOWED_ORIGINS
+    value: "https://your-frontend-domain.com,https://mapo-frontend.vercel.app"
+  
+  # Health check
+  health_check:
+    http_path: /health
+    initial_delay_seconds: 60
+    period_seconds: 10
+    success_threshold: 1
+    failure_threshold: 3
+    timeout_seconds: 5
+
+  # Routing
+  routes:
+  - path: /
+  
+  # Recursos y escalado
+  autoscaling:
+    min_instance_count: 1
+    max_instance_count: 3
+    metrics:
+    - cpu:
+        percent: 70
+    - memory:
+        percent: 80
+
+# Base de datos PostgreSQL administrada
+databases:
+- name: mapo-postgres
+  engine: PG
+  version: "15"
+  num_nodes: 1
+  size: db-s-1vcpu-1gb
+  
+# Configuración de dominio (opcional)
+domains:
+- domain: api.mapo.com
+  type: PRIMARY
+  wildcard: false
+  certificate_id: ""
+
+# Workers (opcional para tareas en background)
+workers:
+- name: background-tasks
+  image:
+    registry_type: DOCR
+    repository: mapo-backend
+    tag: latest
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  envs:
+  - key: WORKER_MODE
+    value: "true"
+  - key: DATABASE_URL
+    value: ${DATABASE_URL}
+    type: SECRET
