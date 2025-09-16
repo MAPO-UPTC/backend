@@ -41,6 +41,25 @@ else
     echo "✅ Docker Compose ya está instalado"
 fi
 
+# Instalar PostgreSQL
+echo "🐘 Instalando PostgreSQL..."
+apt install -y postgresql postgresql-contrib
+systemctl start postgresql
+systemctl enable postgresql
+
+# Configurar usuario y base de datos
+echo "🔧 Configurando PostgreSQL..."
+sudo -u postgres psql -c "CREATE USER mapo WITH PASSWORD 'a123';"
+sudo -u postgres psql -c "CREATE DATABASE mapo_prod OWNER mapo;"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE mapo_prod TO mapo;"
+
+# Configurar PostgreSQL para aceptar conexiones
+sed -i "s/#listen_addresses = 'localhost'/listen_addresses = 'localhost'/g" /etc/postgresql/*/main/postgresql.conf
+echo "host    all             all             127.0.0.1/32            md5" >> /etc/postgresql/*/main/pg_hba.conf
+systemctl restart postgresql
+
+echo "✅ PostgreSQL configurado correctamente"
+
 # Configurar firewall básico
 echo "🔒 Configurando firewall..."
 ufw --force enable

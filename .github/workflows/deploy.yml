@@ -166,27 +166,32 @@ jobs:
         
     - name: �🚀 Deploy to Droplet
       run: |
+        ssh-keyscan -H ${{ secrets.DROPLET_HOST }} >> ~/.ssh/known_hosts
+        
+    - name: 🚀 Transfer Setup Script and Database
+      run: |
+        scp deployment/setup-droplet.sh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}:/root/
+        scp mapo_database_backup.sql ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}:/root/ || echo "No database backup to transfer"
+
+    - name: 🚀 Deploy to Droplet
+      run: |
         ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} << 'EOF'
-          # Actualizar el sistema
-          apt update && apt upgrade -y
-          
-          # Instalar Docker si no está instalado
-          if ! command -v docker &> /dev/null; then
-            curl -fsSL https://get.docker.com -o get-docker.sh
-            sh get-docker.sh
-            systemctl start docker
-            systemctl enable docker
-          fi
-          
-          # Instalar Docker Compose si no está instalado
-          if ! command -v docker-compose &> /dev/null; then
-            curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-            chmod +x /usr/local/bin/docker-compose
+          # Ejecutar setup inicial si no existe la carpeta de app
+          if [ ! -d "/opt/mapo-backend" ]; then
+            echo "🔧 Running initial setup..."
+            chmod +x /root/setup-droplet.sh
+            /root/setup-droplet.sh
           fi
           
           # Crear directorio para la aplicación
           mkdir -p /opt/mapo-backend
           cd /opt/mapo-backend
+          
+          # Importar base de datos si existe el backup
+          if [ -f "/root/mapo_database_backup.sql" ]; then
+            echo "📊 Importing database backup..."
+            sudo -u postgres psql -d mapo_prod < /root/mapo_database_backup.sql || echo "Database import failed or already exists"
+          fi
           
           # Login a DigitalOcean Container Registry
           echo "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" | docker login registry.digitalocean.com -u ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password-stdin
@@ -204,14 +209,17 @@ jobs:
           mapo-backend:
             image: registry.digitalocean.com/mapo-backend:${{ env.IMAGE_TAG }}
             ports:
-              - "80:8000"
+              - "8000:8000"
             environment:
-              - DATABASE_URL=${{ secrets.DATABASE_URL }}
+              - DATABASE_URL=postgresql://mapo:a123@host.docker.internal:5432/mapo_prod
               - FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}
               - FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
               - ENVIRONMENT=production
               - DEBUG=false
+              - ALLOWED_ORIGINS=http://142.93.187.32,https://142.93.187.32
             restart: unless-stopped
+            extra_hosts:
+              - "host.docker.internal:host-gateway"
             volumes:
               - app_logs:/app/logs
         volumes:
