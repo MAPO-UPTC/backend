@@ -157,17 +157,75 @@ jobs:
     - name: 🏷️ Set Image Tag
       run: echo "IMAGE_TAG=sha-${GITHUB_SHA::7}" >> $GITHUB_ENV
       
-    - name: 🚀 Deploy to App Platform
+    - name: � Setup SSH Key
       run: |
-        # Actualizar la app spec con la nueva imagen
-        sed -i 's|image:.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}|' deployment/app-spec.yaml
-        doctl apps update ${{ secrets.DIGITALOCEAN_APP_ID }} --spec deployment/app-spec.yaml
+        mkdir -p ~/.ssh
+        echo "${{ secrets.DROPLET_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.DROPLET_HOST }} >> ~/.ssh/known_hosts
         
-    - name: ✅ Verify Deployment
+    - name: �🚀 Deploy to Droplet
       run: |
-        # Esperar a que el despliegue termine
-        sleep 60
-        doctl apps get ${{ secrets.DIGITALOCEAN_APP_ID }}
+        ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} << 'EOF'
+          # Actualizar el sistema
+          apt update && apt upgrade -y
+          
+          # Instalar Docker si no está instalado
+          if ! command -v docker &> /dev/null; then
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sh get-docker.sh
+            systemctl start docker
+            systemctl enable docker
+          fi
+          
+          # Instalar Docker Compose si no está instalado
+          if ! command -v docker-compose &> /dev/null; then
+            curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            chmod +x /usr/local/bin/docker-compose
+          fi
+          
+          # Crear directorio para la aplicación
+          mkdir -p /opt/mapo-backend
+          cd /opt/mapo-backend
+          
+          # Login a DigitalOcean Container Registry
+          echo "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" | docker login registry.digitalocean.com -u ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password-stdin
+          
+          # Descargar la imagen más reciente
+          docker pull registry.digitalocean.com/mapo-backend:${{ env.IMAGE_TAG }}
+          
+          # Detener contenedores existentes
+          docker-compose down || true
+          
+          # Crear archivo docker-compose.yml
+          cat > docker-compose.yml << 'COMPOSE_EOF'
+        version: '3.8'
+        services:
+          mapo-backend:
+            image: registry.digitalocean.com/mapo-backend:${{ env.IMAGE_TAG }}
+            ports:
+              - "80:8000"
+            environment:
+              - DATABASE_URL=${{ secrets.DATABASE_URL }}
+              - FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}
+              - FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+              - ENVIRONMENT=production
+              - DEBUG=false
+            restart: unless-stopped
+            volumes:
+              - app_logs:/app/logs
+        volumes:
+          app_logs:
+        COMPOSE_EOF
+          
+          # Iniciar los servicios
+          docker-compose up -d
+          
+          # Verificar que los contenedores estén corriendo
+          docker-compose ps
+          
+          echo "✅ Deployment completed successfully!"
+        EOF
 
   # ====================================
   # JOB 5: STAGING DEPLOY (DEVELOP BRANCH)
