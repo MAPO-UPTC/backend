@@ -14,7 +14,7 @@ from database import engine
 from models_db import Base
 
 # Routers
-from routers import product, user
+from routers import product, user, client, inventory
 from utils.logging_config import (
     log_error,
     log_request,
@@ -125,6 +125,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Include routers
 app.include_router(user.router, prefix="/users", tags=["users"])
 app.include_router(product.router, prefix="/products", tags=["products"])
+app.include_router(client.router, prefix="/clients", tags=["clients"])
+app.include_router(inventory.router, prefix="/inventory", tags=["inventory"])
 
 
 @app.get("/")
