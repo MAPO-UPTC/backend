@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from config.permissions import Entity, Action, PermissionManager
+from config.permissions import Action, Entity, PermissionManager
 from database import get_db
 from models import get_current_user_roles
 from schemas.user import UserResponse

@@ -14,7 +14,7 @@ from database import engine
 from models_db import Base
 
 # Routers
-from routers import product, user, client, inventory
+from routers import client, inventory, product, user
 from utils.logging_config import (
     log_error,
     log_request,
