@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAPO - Debug Registration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 MAPO Backend - Debug Registration</h1>
+        <p><strong>Servidor:</strong> http://142.93.187.32:8000</p>
+        <p><strong>Entorno:</strong> Development/Staging</p>
+        
+        <div class="test-section">
+            <h2>🧪 Test 1: Connectivity Check</h2>
+            <button onclick="testConnectivity()">Test Backend Connection</button>
+            <div id="connectivity-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>📝 Test 2: User Registration</h2>
+            <form id="registration-form">
+                <div class="form-group">
+                    <label>Nombre:</label>
+                    <input type="text" id="name" value="Test" required>
+                </div>
+                <div class="form-group">
+                    <label>Apellido:</label>
+                    <input type="text" id="last_name" value="User" required>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Documento:</label>
+                    <select id="document_type" required>
+                        <option value="CC">CC</option>
+                        <option value="TI">TI</option>
+                        <option value="CE">CE</option>
+                        <option value="PP">PP</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Número de Documento:</label>
+                    <input type="text" id="document_number" value="" required>
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="email" value="" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña:</label>
+                    <input type="password" id="password" value="password123" required>
+                </div>
+                <button type="submit">Register User</button>
+            </form>
+            <div id="registration-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🌐 Test 3: CORS Check</h2>
+            <button onclick="testCORS()">Test CORS Configuration</button>
+            <div id="cors-result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://142.93.187.32:8000';
+
+        // Generate unique values
+        function generateUniqueId() {
+            return Date.now().toString();
+        }
+
+        // Set unique default values
+        document.getElementById('document_number').value = generateUniqueId();
+        document.getElementById('email').value = `test-${generateUniqueId()}@example.com`;
+
+        async function testConnectivity() {
+            const resultDiv = document.getElementById('connectivity-result');
+            resultDiv.innerHTML = '<div class="info">Testing connectivity...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ Backend is healthy!
+Status: ${data.status}
+Environment: ${data.environment}
+Version: ${data.version}
+Database: ${data.services?.database || 'unknown'}
+Firebase: ${data.services?.firebase || 'unknown'}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Backend error: ${response.status} ${response.statusText}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Connection failed: ${error.message}
+                
+Possible issues:
+- Network connectivity
+- CORS configuration  
+- Backend server down</div>`;
+            }
+        }
+
+        async function testCORS() {
+            const resultDiv = document.getElementById('cors-result');
+            resultDiv.innerHTML = '<div class="info">Testing CORS...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/signup`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': window.location.origin
+                    }
+                });
+
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('access-control-allow-origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('access-control-allow-methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('access-control-allow-headers'),
+                };
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ CORS is working!
+Origin: ${window.location.origin}
+Allowed Origin: ${corsHeaders['Access-Control-Allow-Origin']}
+Allowed Methods: ${corsHeaders['Access-Control-Allow-Methods']}
+Allowed Headers: ${corsHeaders['Access-Control-Allow-Headers']}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ CORS preflight failed: ${response.status}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ CORS test failed: ${error.message}</div>`;
+            }
+        }
+
+        document.getElementById('registration-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const resultDiv = document.getElementById('registration-result');
+            resultDiv.innerHTML = '<div class="info">Registering user...</div>';
+
+            const userData = {
+                name: document.getElementById('name').value,
+                last_name: document.getElementById('last_name').value,
+                document_type: document.getElementById('document_type').value,
+                document_number: document.getElementById('document_number').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(userData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ User registered successfully!
+User ID: ${data.user_id}
+Message: ${data.message}
+
+Request Data:
+${JSON.stringify(userData, null, 2)}</div>`;
+                    
+                    // Generate new unique values for next test
+                    document.getElementById('document_number').value = generateUniqueId();
+                    document.getElementById('email').value = `test-${generateUniqueId()}@example.com`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Registration failed: ${response.status} ${response.statusText}
+                    
+Error Details:
+${data.detail || JSON.stringify(data, null, 2)}
+
+Request Data:
+${JSON.stringify(userData, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Registration failed: ${error.message}
+
+This could be due to:
+- Network connectivity issues
+- CORS configuration problems
+- Backend server errors
+
+Request Data:
+${JSON.stringify(userData, null, 2)}</div>`;
+            }
+        });
+
+        // Auto-run connectivity test on page load
+        window.addEventListener('load', () => {
+            testConnectivity();
+        });
+    </script>
+</body>
+</html>
