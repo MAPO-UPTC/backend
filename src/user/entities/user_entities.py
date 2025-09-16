@@ -1,6 +1,8 @@
-from pydantic import BaseModel
-from typing import Optional
 import uuid
+from typing import Optional
+
+from pydantic import BaseModel
+
 
 class UserEntities(BaseModel):
     id: uuid.UUID

@@ -31,8 +31,8 @@ COPY src/ ./src/
 COPY start_dev.py requirements.txt ./
 COPY .env.example ./
 
-# Crear directorio de logs
-RUN mkdir -p logs
+# Crear directorio de logs con permisos correctos
+RUN mkdir -p logs && chmod 755 logs
 
 # Cambiar permisos y propietario
 RUN chown -R appuser:appuser /app

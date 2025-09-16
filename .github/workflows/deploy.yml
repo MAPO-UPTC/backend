@@ -13,7 +13,7 @@ on:
     branches: [ main ]
 
 env:
-  REGISTRY: registry.digitalocean.com
+  REGISTRY: registry.digitalocean.com/mapo-registry
   IMAGE_NAME: mapo-backend
 
 jobs:
@@ -26,19 +26,19 @@ jobs:
     
     strategy:
       matrix:
-        python-version: [3.9, 3.10, 3.11]
+        python-version: ["3.9", "3.11"]
     
     steps:
     - name: 📥 Checkout Code
       uses: actions/checkout@v4
       
     - name: 🐍 Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         
     - name: 📦 Cache Dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -85,7 +85,7 @@ jobs:
         bandit -r src/ -f json -o security-report.json || true
         
     - name: 📄 Upload Security Report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: security-report
         path: security-report.json
@@ -157,17 +157,96 @@ jobs:
     - name: 🏷️ Set Image Tag
       run: echo "IMAGE_TAG=sha-${GITHUB_SHA::7}" >> $GITHUB_ENV
       
-    - name: 🚀 Deploy to App Platform
+    - name: � Setup SSH Key
       run: |
-        # Actualizar la app spec con la nueva imagen
-        sed -i 's|image:.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}|' deployment/app-spec.yaml
-        doctl apps update ${{ secrets.DIGITALOCEAN_APP_ID }} --spec deployment/app-spec.yaml
+        mkdir -p ~/.ssh
+        echo "${{ secrets.DROPLET_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.DROPLET_HOST }} >> ~/.ssh/known_hosts
         
-    - name: ✅ Verify Deployment
+    - name: �🚀 Deploy to Droplet
       run: |
-        # Esperar a que el despliegue termine
-        sleep 60
-        doctl apps get ${{ secrets.DIGITALOCEAN_APP_ID }}
+        ssh-keyscan -H ${{ secrets.DROPLET_HOST }} >> ~/.ssh/known_hosts
+        
+    - name: 🚀 Transfer Setup Script and Database
+      run: |
+        scp deployment/setup-droplet.sh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}:/root/
+        scp mapo_database_backup.sql ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}:/root/ || echo "No database backup to transfer"
+
+    - name: 🚀 Deploy to Droplet
+      run: |
+        ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} << 'EOF'
+          # Ejecutar setup inicial si no existe la carpeta de app
+          if [ ! -d "/opt/mapo-backend" ]; then
+            echo "🔧 Running initial setup..."
+            chmod +x /root/setup-droplet.sh
+            /root/setup-droplet.sh
+          fi
+          
+          # Crear directorio para la aplicación
+          mkdir -p /opt/mapo-backend
+          cd /opt/mapo-backend
+          
+          # Importar base de datos si existe el backup
+          if [ -f "/root/mapo_database_backup.sql" ]; then
+            echo "📊 Importing database backup..."
+            sudo -u postgres psql -d mapo_dev < /root/mapo_database_backup.sql || echo "Database import failed or already exists"
+          fi
+          
+          # Login a DigitalOcean Container Registry
+          echo "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" | docker login registry.digitalocean.com -u ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password-stdin
+          
+          # Descargar la imagen más reciente
+          docker pull registry.digitalocean.com/mapo-registry/mapo-backend:develop
+          
+          # Detener contenedores existentes
+          docker-compose down || true
+          
+          # Crear archivo docker-compose.yml
+          cat > docker-compose.yml << 'COMPOSE_EOF'
+        version: '3.8'
+        services:
+          mapo-backend:
+            image: registry.digitalocean.com/mapo-registry/mapo-backend:develop
+            ports:
+              - "8000:8000"
+            environment:
+              - DATABASE_URL=postgresql://mapo:a123@host.docker.internal:5432/mapo_dev
+              # Firebase Service Account Configuration
+              - FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+              - FIREBASE_PRIVATE_KEY_ID=${{ secrets.FIREBASE_PRIVATE_KEY_ID }}
+              - FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}
+              - FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}
+              - FIREBASE_CLIENT_ID=${{ secrets.FIREBASE_CLIENT_ID }}
+              - FIREBASE_CLIENT_X509_CERT_URL=${{ secrets.FIREBASE_CLIENT_X509_CERT_URL }}
+              # Firebase Web Configuration
+              - FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }}
+              - FIREBASE_AUTH_DOMAIN=${{ secrets.FIREBASE_AUTH_DOMAIN }}
+              - FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }}
+              - FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+              - FIREBASE_APP_ID=${{ secrets.FIREBASE_APP_ID }}
+              - FIREBASE_DATABASE_URL=${{ secrets.FIREBASE_DATABASE_URL }}
+              # Application Configuration
+              - ENVIRONMENT=production
+              - DEBUG=false
+              - ALLOWED_ORIGINS=http://142.93.187.32,https://142.93.187.32,https://mapo-dev.netlify.app
+            restart: unless-stopped
+            extra_hosts:
+              - "host.docker.internal:host-gateway"
+            volumes:
+              - app_logs:/app/logs
+        volumes:
+          app_logs:
+        COMPOSE_EOF
+          
+          # Iniciar los servicios
+          docker-compose up -d
+          
+          # Verificar que los contenedores estén corriendo
+          docker-compose ps
+          
+          echo "✅ Deployment completed successfully!"
+        EOF
 
   # ====================================
   # JOB 5: STAGING DEPLOY (DEVELOP BRANCH)

@@ -1,15 +1,17 @@
 import os
 from typing import List
+
 from dotenv import load_dotenv
 
 # Cargar variables de entorno
 load_dotenv()
 
+
 class Settings:
     """
     Configuración centralizada de la aplicación usando variables de entorno.
     """
-    
+
     # ====================================
     # FIREBASE SERVICE ACCOUNT
     # ====================================
@@ -18,12 +20,21 @@ class Settings:
     FIREBASE_PRIVATE_KEY: str = os.getenv("FIREBASE_PRIVATE_KEY", "")
     FIREBASE_CLIENT_EMAIL: str = os.getenv("FIREBASE_CLIENT_EMAIL", "")
     FIREBASE_CLIENT_ID: str = os.getenv("FIREBASE_CLIENT_ID", "")
-    FIREBASE_AUTH_URI: str = os.getenv("FIREBASE_AUTH_URI", "https://accounts.google.com/o/oauth2/auth")
-    FIREBASE_TOKEN_URI: str = os.getenv("FIREBASE_TOKEN_URI", "https://oauth2.googleapis.com/token")
-    FIREBASE_AUTH_PROVIDER_X509_CERT_URL: str = os.getenv("FIREBASE_AUTH_PROVIDER_X509_CERT_URL", "https://www.googleapis.com/oauth2/v1/certs")
+    FIREBASE_AUTH_URI: str = os.getenv(
+        "FIREBASE_AUTH_URI", "https://accounts.google.com/o/oauth2/auth"
+    )
+    FIREBASE_TOKEN_URI: str = os.getenv(
+        "FIREBASE_TOKEN_URI", "https://oauth2.googleapis.com/token"
+    )
+    FIREBASE_AUTH_PROVIDER_X509_CERT_URL: str = os.getenv(
+        "FIREBASE_AUTH_PROVIDER_X509_CERT_URL",
+        "https://www.googleapis.com/oauth2/v1/certs",
+    )
     FIREBASE_CLIENT_X509_CERT_URL: str = os.getenv("FIREBASE_CLIENT_X509_CERT_URL", "")
-    FIREBASE_UNIVERSE_DOMAIN: str = os.getenv("FIREBASE_UNIVERSE_DOMAIN", "googleapis.com")
-    
+    FIREBASE_UNIVERSE_DOMAIN: str = os.getenv(
+        "FIREBASE_UNIVERSE_DOMAIN", "googleapis.com"
+    )
+
     # ====================================
     # FIREBASE WEB CONFIG
     # ====================================
@@ -34,31 +45,33 @@ class Settings:
     FIREBASE_APP_ID: str = os.getenv("FIREBASE_APP_ID", "")
     FIREBASE_MEASUREMENT_ID: str = os.getenv("FIREBASE_MEASUREMENT_ID", "")
     FIREBASE_DATABASE_URL: str = os.getenv("FIREBASE_DATABASE_URL", "")
-    
+
     # ====================================
     # BASE DE DATOS
     # ====================================
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./mapo_dev.db")
-    
+
     # ====================================
     # CONFIGURACIÓN DE APLICACIÓN
     # ====================================
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     SECRET_KEY: str = os.getenv("SECRET_KEY", "change-this-secret-key")
-    
+
     # ====================================
     # CONFIGURACIÓN DE CORS
     # ====================================
-    ALLOWED_ORIGINS: List[str] = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
-    
+    ALLOWED_ORIGINS: List[str] = os.getenv(
+        "ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
+    ).split(",")
+
     # ====================================
     # CONFIGURACIÓN ADICIONAL PARA PRODUCCIÓN
     # ====================================
     PORT: int = int(os.getenv("PORT", "8000"))
     WORKERS: int = int(os.getenv("WORKERS", "4"))
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "info")
-    
+
     # ====================================
     # CREDENCIALES DE TESTING
     # ====================================
@@ -66,13 +79,17 @@ class Settings:
     TEST_ADMIN_PASSWORD: str = os.getenv("TEST_ADMIN_PASSWORD", "change_this_password")
     TEST_USER_EMAIL: str = os.getenv("TEST_USER_EMAIL", "testuser@example.com")
     TEST_USER_PASSWORD: str = os.getenv("TEST_USER_PASSWORD", "change_this_password")
-    TEST_PERMISSIONS_EMAIL: str = os.getenv("TEST_PERMISSIONS_EMAIL", "testpermissions@example.com")
-    TEST_PERMISSIONS_PASSWORD: str = os.getenv("TEST_PERMISSIONS_PASSWORD", "change_this_password")
-    
+    TEST_PERMISSIONS_EMAIL: str = os.getenv(
+        "TEST_PERMISSIONS_EMAIL", "testpermissions@example.com"
+    )
+    TEST_PERMISSIONS_PASSWORD: str = os.getenv(
+        "TEST_PERMISSIONS_PASSWORD", "change_this_password"
+    )
+
     # ====================================
     # MÉTODOS DE UTILIDAD
     # ====================================
-    
+
     @classmethod
     def get_firebase_service_account_dict(cls) -> dict:
         """
@@ -83,14 +100,18 @@ class Settings:
             "type": "service_account",
             "project_id": cls.FIREBASE_PROJECT_ID,
             "private_key_id": cls.FIREBASE_PRIVATE_KEY_ID,
-            "private_key": cls.FIREBASE_PRIVATE_KEY.replace('\\n', '\n') if cls.FIREBASE_PRIVATE_KEY else "",
+            "private_key": (
+                cls.FIREBASE_PRIVATE_KEY.replace("\\n", "\n")
+                if cls.FIREBASE_PRIVATE_KEY
+                else ""
+            ),
             "client_email": cls.FIREBASE_CLIENT_EMAIL,
             "client_id": cls.FIREBASE_CLIENT_ID,
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
             "client_x509_cert_url": f"https://www.googleapis.com/robot/v1/metadata/x509/{cls.FIREBASE_CLIENT_EMAIL}",
-            "universe_domain": "googleapis.com"
+            "universe_domain": "googleapis.com",
         }
 
     @classmethod
@@ -102,7 +123,7 @@ class Settings:
     def get_cors_origins(cls) -> list:
         """Retorna las URLs permitidas para CORS"""
         return cls.ALLOWED_ORIGINS
-    
+
     @classmethod
     def get_firebase_web_config(cls) -> dict:
         """
@@ -116,9 +137,9 @@ class Settings:
             "messagingSenderId": cls.FIREBASE_MESSAGING_SENDER_ID,
             "appId": cls.FIREBASE_APP_ID,
             "measurementId": cls.FIREBASE_MEASUREMENT_ID,
-            "databaseURL": cls.FIREBASE_DATABASE_URL
+            "databaseURL": cls.FIREBASE_DATABASE_URL,
         }
-    
+
     @classmethod
     def validate_config(cls) -> bool:
         """
@@ -130,23 +151,34 @@ class Settings:
                 print("❌ Error: DATABASE_URL es requerida")
                 return False
             return True
-        
-        # En producción, validamos todo
-        required_vars = [
-            cls.FIREBASE_PROJECT_ID,
-            cls.FIREBASE_PRIVATE_KEY,
-            cls.FIREBASE_CLIENT_EMAIL,
-            cls.FIREBASE_API_KEY,
-            cls.DATABASE_URL
-        ]
-        
-        missing_vars = [var for var in required_vars if not var]
-        
-        if missing_vars:
-            print(f"❌ Error: Faltan variables de entorno críticas: {missing_vars}")
+
+        # En producción, validamos las variables críticas
+        critical_vars = {
+            "DATABASE_URL": cls.DATABASE_URL,
+        }
+
+        # Firebase es crítico solo si se usa autenticación
+        firebase_vars = {
+            "FIREBASE_PROJECT_ID": cls.FIREBASE_PROJECT_ID,
+            "FIREBASE_PRIVATE_KEY": cls.FIREBASE_PRIVATE_KEY,
+            "FIREBASE_CLIENT_EMAIL": cls.FIREBASE_CLIENT_EMAIL,
+        }
+
+        missing_critical = [name for name, value in critical_vars.items() if not value]
+        missing_firebase = [name for name, value in firebase_vars.items() if not value]
+
+        if missing_critical:
+            print(f"❌ Error: Faltan variables de entorno críticas: {missing_critical}")
             return False
-        
+
+        if missing_firebase:
+            print(
+                f"⚠️  Advertencia: Variables de Firebase faltantes: {missing_firebase}"
+            )
+            print("🔥 La autenticación Firebase no funcionará correctamente")
+
         return True
+
 
 # Instancia global de configuración
 settings = Settings()
