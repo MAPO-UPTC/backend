@@ -50,8 +50,8 @@ systemctl enable postgresql
 # Configurar usuario y base de datos
 echo "🔧 Configurando PostgreSQL..."
 sudo -u postgres psql -c "CREATE USER mapo WITH PASSWORD 'a123';"
-sudo -u postgres psql -c "CREATE DATABASE mapo_prod OWNER mapo;"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE mapo_prod TO mapo;"
+sudo -u postgres psql -c "CREATE DATABASE mapo_dev OWNER mapo;"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE mapo_dev TO mapo;"
 
 # Configurar PostgreSQL para aceptar conexiones
 sed -i "s/#listen_addresses = 'localhost'/listen_addresses = 'localhost'/g" /etc/postgresql/*/main/postgresql.conf

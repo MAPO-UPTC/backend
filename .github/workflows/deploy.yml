@@ -190,7 +190,7 @@ jobs:
           # Importar base de datos si existe el backup
           if [ -f "/root/mapo_database_backup.sql" ]; then
             echo "📊 Importing database backup..."
-            sudo -u postgres psql -d mapo_prod < /root/mapo_database_backup.sql || echo "Database import failed or already exists"
+            sudo -u postgres psql -d mapo_dev < /root/mapo_database_backup.sql || echo "Database import failed or already exists"
           fi
           
           # Login a DigitalOcean Container Registry
@@ -211,7 +211,7 @@ jobs:
             ports:
               - "8000:8000"
             environment:
-              - DATABASE_URL=postgresql://mapo:a123@host.docker.internal:5432/mapo_prod
+              - DATABASE_URL=postgresql://mapo:a123@host.docker.internal:5432/mapo_dev
               - FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}
               - FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
               - ENVIRONMENT=production
