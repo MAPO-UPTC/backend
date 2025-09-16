@@ -152,20 +152,28 @@ class Settings:
                 return False
             return True
 
-        # En producción, validamos todo
-        required_vars = [
-            cls.FIREBASE_PROJECT_ID,
-            cls.FIREBASE_PRIVATE_KEY,
-            cls.FIREBASE_CLIENT_EMAIL,
-            cls.FIREBASE_API_KEY,
-            cls.DATABASE_URL,
-        ]
+        # En producción, validamos las variables críticas
+        critical_vars = {
+            "DATABASE_URL": cls.DATABASE_URL,
+        }
+        
+        # Firebase es crítico solo si se usa autenticación
+        firebase_vars = {
+            "FIREBASE_PROJECT_ID": cls.FIREBASE_PROJECT_ID,
+            "FIREBASE_PRIVATE_KEY": cls.FIREBASE_PRIVATE_KEY,
+            "FIREBASE_CLIENT_EMAIL": cls.FIREBASE_CLIENT_EMAIL,
+        }
 
-        missing_vars = [var for var in required_vars if not var]
+        missing_critical = [name for name, value in critical_vars.items() if not value]
+        missing_firebase = [name for name, value in firebase_vars.items() if not value]
 
-        if missing_vars:
-            print(f"❌ Error: Faltan variables de entorno críticas: {missing_vars}")
+        if missing_critical:
+            print(f"❌ Error: Faltan variables de entorno críticas: {missing_critical}")
             return False
+            
+        if missing_firebase:
+            print(f"⚠️  Advertencia: Variables de Firebase faltantes: {missing_firebase}")
+            print("🔥 La autenticación Firebase no funcionará correctamente")
 
         return True
 

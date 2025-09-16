@@ -9,10 +9,6 @@ def setup_logging():
     """
     Configurar logging para la aplicación.
     """
-    # Crear directorio de logs si no existe
-    log_dir = Path("logs")
-    log_dir.mkdir(exist_ok=True)
-
     # Configurar formato de logs
     log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     date_format = "%Y-%m-%d %H:%M:%S"
@@ -29,25 +25,38 @@ def setup_logging():
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(log_level)
 
-    app_file_handler = logging.FileHandler(log_dir / "app.log")
-    app_file_handler.setLevel(logging.INFO)
+    # Solo intentar crear file handlers si no estamos en un entorno restringido
+    file_handlers = []
+    try:
+        # Crear directorio de logs si no existe
+        log_dir = Path("logs")
+        log_dir.mkdir(exist_ok=True)
+        
+        app_file_handler = logging.FileHandler(log_dir / "app.log")
+        app_file_handler.setLevel(logging.INFO)
+        file_handlers.append(app_file_handler)
 
-    error_file_handler = logging.FileHandler(log_dir / "error.log")
-    error_file_handler.setLevel(logging.ERROR)
+        error_file_handler = logging.FileHandler(log_dir / "error.log")
+        error_file_handler.setLevel(logging.ERROR)
+        file_handlers.append(error_file_handler)
+    except (PermissionError, OSError) as e:
+        # Si no podemos crear archivos de log, solo usamos console
+        print(f"⚠️  Warning: No se pueden crear archivos de log: {e}")
+        print("📝 Usando solo logging por consola")
 
     # Crear formatter
     formatter = logging.Formatter(log_format, date_format)
 
     # Aplicar formatter a todos los handlers
     console_handler.setFormatter(formatter)
-    app_file_handler.setFormatter(formatter)
-    error_file_handler.setFormatter(formatter)
+    for handler in file_handlers:
+        handler.setFormatter(formatter)
 
     # Configurar el root logger
     root_logger.setLevel(log_level)
     root_logger.addHandler(console_handler)
-    root_logger.addHandler(app_file_handler)
-    root_logger.addHandler(error_file_handler)
+    for handler in file_handlers:
+        root_logger.addHandler(handler)
 
     # Configurar loggers específicos
     # Reducir verbosidad de librerías externas
