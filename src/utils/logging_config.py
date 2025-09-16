@@ -31,7 +31,7 @@ def setup_logging():
         # Crear directorio de logs si no existe
         log_dir = Path("logs")
         log_dir.mkdir(exist_ok=True)
-        
+
         app_file_handler = logging.FileHandler(log_dir / "app.log")
         app_file_handler.setLevel(logging.INFO)
         file_handlers.append(app_file_handler)

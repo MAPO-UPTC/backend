@@ -156,7 +156,7 @@ class Settings:
         critical_vars = {
             "DATABASE_URL": cls.DATABASE_URL,
         }
-        
+
         # Firebase es crítico solo si se usa autenticación
         firebase_vars = {
             "FIREBASE_PROJECT_ID": cls.FIREBASE_PROJECT_ID,
@@ -170,9 +170,11 @@ class Settings:
         if missing_critical:
             print(f"❌ Error: Faltan variables de entorno críticas: {missing_critical}")
             return False
-            
+
         if missing_firebase:
-            print(f"⚠️  Advertencia: Variables de Firebase faltantes: {missing_firebase}")
+            print(
+                f"⚠️  Advertencia: Variables de Firebase faltantes: {missing_firebase}"
+            )
             print("🔥 La autenticación Firebase no funcionará correctamente")
 
         return True
