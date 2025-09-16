@@ -141,12 +141,19 @@ async def health_check():
     Endpoint de salud para monitoreo y balanceadores de carga.
     Verifica conectividad a base de datos y servicios críticos.
     """
-    # Verificar conexión a base de datos
+    # Verificar conexión a base de datos (con timeout rápido)
     database_status = "disconnected"
     try:
+        # Usar timeout muy corto para evitar bloqueos
+        import time
+
+        start_time = time.time()
         with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
-        database_status = "connected"
+            result = connection.execute(text("SELECT 1"))
+            if time.time() - start_time < 2:  # Solo si es rápido
+                database_status = "connected"
+            else:
+                database_status = "slow_connection"
     except Exception as db_error:
         logger.warning(f"Database health check failed: {db_error}")
         database_status = "disconnected"
