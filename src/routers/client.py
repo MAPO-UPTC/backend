@@ -5,9 +5,8 @@ from sqlalchemy.orm import Session
 
 from config.permissions import Action, Entity, PermissionManager
 from database import get_db
-from models import get_current_user_roles
 from schemas.user import UserResponse
-from utils.auth import get_current_user
+from utils.auth import get_current_user, get_current_user_from_db, get_effective_roles
 
 router = APIRouter()
 
@@ -24,7 +23,8 @@ async def get_clients(
     Los usuarios pueden ver todos los clientes según los permisos.
     """
     # Obtener roles del usuario
-    user_roles = get_current_user_roles(current_user.id, db)
+    user_from_db = get_current_user_from_db(current_user)
+    user_roles = get_effective_roles(user_from_db, str(current_user.id))
 
     # Verificar permisos para cualquier rol del usuario
     has_permission = False
@@ -54,7 +54,8 @@ async def get_client(
     Obtener un cliente específico por ID.
     """
     # Obtener roles del usuario
-    user_roles = get_current_user_roles(current_user.id, db)
+    user_from_db = get_current_user_from_db(current_user)
+    user_roles = get_effective_roles(user_from_db, str(current_user.id))
 
     # Verificar permisos
     has_permission = False
@@ -89,7 +90,8 @@ async def create_client(
     Crear un nuevo cliente.
     """
     # Obtener roles del usuario
-    user_roles = get_current_user_roles(current_user.id, db)
+    user_from_db = get_current_user_from_db(current_user)
+    user_roles = get_effective_roles(user_from_db, str(current_user.id))
 
     # Verificar permisos
     has_permission = False
