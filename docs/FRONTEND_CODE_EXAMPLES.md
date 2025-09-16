@@ -438,28 +438,29 @@ export class ProductService {
 
 ## 🔧 Configuración de Variables de Entorno
 
-### **React (.env)**
+### **React (.env.development)**
 ```env
 REACT_APP_API_BASE_URL=http://142.93.187.32:8000
-REACT_APP_ENVIRONMENT=production
+REACT_APP_ENVIRONMENT=development
 ```
 
-### **Vue/Vite (.env)**
+### **Vue/Vite (.env.development)**
 ```env
 VITE_API_BASE_URL=http://142.93.187.32:8000
-VITE_ENVIRONMENT=production
+VITE_ENVIRONMENT=development
 ```
 
-### **Next.js (.env.local)**
+### **Next.js (.env.development)**
 ```env
 NEXT_PUBLIC_API_URL=http://142.93.187.32:8000
-NEXT_PUBLIC_ENVIRONMENT=production
+NEXT_PUBLIC_ENVIRONMENT=development
 ```
 
 ### **Angular (environment.ts)**
 ```typescript
 export const environment = {
-  production: true,
+  production: false,
+  development: true,
   apiUrl: 'http://142.93.187.32:8000',
 };
 ```
@@ -556,4 +557,32 @@ export default async function handler(req, res) {
 
 ---
 
-**🚀 Con estos ejemplos, cualquier frontend debería poder conectarse exitosamente al backend de MAPO en producción.**
+**🚀 Con estos ejemplos, cualquier frontend debería poder conectarse exitosamente al backend de MAPO en el entorno de desarrollo/staging.**
+
+---
+
+## 🏭 Configuración Futura para Producción
+
+Cuando se despliegue a producción real, actualizar las URLs a:
+
+### **Variables de Producción:**
+```env
+# React
+REACT_APP_API_BASE_URL=https://api.mapo.com
+REACT_APP_ENVIRONMENT=production
+
+# Vue/Vite
+VITE_API_BASE_URL=https://api.mapo.com
+VITE_ENVIRONMENT=production
+
+# Next.js
+NEXT_PUBLIC_API_URL=https://api.mapo.com
+NEXT_PUBLIC_ENVIRONMENT=production
+```
+
+### **Diferencias Clave en Producción:**
+- **HTTPS**: Conexión segura obligatoria
+- **Dominio personalizado**: En lugar de IP directa
+- **Rate limiting**: Protección contra abuso
+- **Logs sanitizados**: Sin información sensible
+- **Monitoreo avanzado**: Métricas y alertas

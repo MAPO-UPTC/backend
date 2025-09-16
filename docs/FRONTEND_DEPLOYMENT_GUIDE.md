@@ -1,14 +1,14 @@
-# 🚀 Guía de Integración Frontend - MAPO Backend en Producción
+# 🚀 Guía de Integración Frontend - MAPO Backend en Desarrollo/Staging
 
 ## 📋 Resumen de Cambios
 
-El backend de MAPO ha sido **completamente desplegado en producción** en DigitalOcean. El frontend debe actualizar sus configuraciones para apuntar al nuevo endpoint de producción.
+El backend de MAPO ha sido **desplegado en el entorno de desarrollo/staging** en DigitalOcean. El frontend debe actualizar sus configuraciones para apuntar al nuevo endpoint de desarrollo.
 
 ---
 
-## 🌐 Nueva URL de Producción
+## 🌐 URL del Entorno de Desarrollo
 
-### **URL Base de la API:**
+### **URL Base de la API (Development/Staging):**
 ```
 http://142.93.187.32:8000
 ```
@@ -26,10 +26,10 @@ http://142.93.187.32:8000
 
 ### **1. Variables de Entorno**
 
-Actualiza tu archivo `.env` o `.env.production`:
+Actualiza tu archivo `.env.development` o `.env.staging`:
 
 ```env
-# Producción
+# Entorno de Desarrollo/Staging
 REACT_APP_API_BASE_URL=http://142.93.187.32:8000
 REACT_APP_API_URL=http://142.93.187.32:8000
 VITE_API_BASE_URL=http://142.93.187.32:8000  # Si usas Vite
@@ -37,6 +37,9 @@ NEXT_PUBLIC_API_URL=http://142.93.187.32:8000  # Si usas Next.js
 
 # Para desarrollo local (mantener)
 # REACT_APP_API_BASE_URL=http://localhost:8000
+
+# Para producción futura (cuando se despliegue)
+# REACT_APP_API_BASE_URL=https://api.mapo-prod.com
 ```
 
 ### **2. Archivo de Configuración (config.js/ts)**
@@ -44,15 +47,22 @@ NEXT_PUBLIC_API_URL=http://142.93.187.32:8000  # Si usas Next.js
 ```javascript
 // config/api.js
 const config = {
-  development: {
+  local: {
     API_BASE_URL: 'http://localhost:8000',
   },
+  development: {
+    API_BASE_URL: 'http://142.93.187.32:8000',  // Servidor de staging
+  },
+  staging: {
+    API_BASE_URL: 'http://142.93.187.32:8000',  // Mismo servidor por ahora
+  },
   production: {
-    API_BASE_URL: 'http://142.93.187.32:8000',
+    API_BASE_URL: 'https://api.mapo-prod.com',  // Futuro endpoint de producción
   }
 };
 
-export const API_BASE_URL = config[process.env.NODE_ENV]?.API_BASE_URL || config.development.API_BASE_URL;
+const environment = process.env.NODE_ENV || 'development';
+export const API_BASE_URL = config[environment]?.API_BASE_URL || config.local.API_BASE_URL;
 ```
 
 ### **3. Para Axios/Fetch**
@@ -152,7 +162,7 @@ fetch('http://142.93.187.32:8000/health')
 ```json
 {
   "status": "healthy",
-  "environment": "production",
+  "environment": "development",
   "version": "1.0.0",
   "services": {
     "database": "connected",
@@ -211,6 +221,7 @@ TypeError: Failed to fetch
 - **Documentación**: http://142.93.187.32:8000/docs
 
 ### **Información Técnica:**
+- **Entorno**: Desarrollo/Staging
 - **Servidor**: DigitalOcean Droplet (Ubuntu)
 - **Base de Datos**: PostgreSQL 17
 - **Autenticación**: Firebase Admin SDK
@@ -235,6 +246,20 @@ Para reportar problemas, incluir:
 
 ---
 
-**✅ El backend está completamente funcional y listo para uso en producción.**
+**✅ El backend está completamente funcional y listo para desarrollo/staging.**
 
 **🔗 Documentación interactiva disponible en: http://142.93.187.32:8000/docs**
+
+---
+
+## 🏗️ Roadmap a Producción
+
+### **Próximos pasos para el despliegue real de producción:**
+
+1. **Dominio personalizado**: Configurar `api.mapo.com` o similar
+2. **HTTPS**: Certificado SSL para conexiones seguras
+3. **Base de datos**: Instancia de PostgreSQL dedicada para producción
+4. **Monitoreo**: Logs centralizados y alertas
+5. **Backup**: Estrategia de respaldo automático
+6. **Escalabilidad**: Load balancer y múltiples instancias
+7. **Seguridad**: WAF, rate limiting, y hardening adicional
