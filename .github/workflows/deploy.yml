@@ -13,7 +13,7 @@ on:
     branches: [ main ]
 
 env:
-  REGISTRY: registry.digitalocean.com
+  REGISTRY: registry.digitalocean.com/mapo-registry
   IMAGE_NAME: mapo-backend
 
 jobs:
@@ -197,7 +197,7 @@ jobs:
           echo "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" | docker login registry.digitalocean.com -u ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password-stdin
           
           # Descargar la imagen más reciente
-          docker pull registry.digitalocean.com/mapo-backend:${{ env.IMAGE_TAG }}
+          docker pull registry.digitalocean.com/mapo-registry/mapo-backend:develop
           
           # Detener contenedores existentes
           docker-compose down || true
@@ -207,7 +207,7 @@ jobs:
         version: '3.8'
         services:
           mapo-backend:
-            image: registry.digitalocean.com/mapo-backend:${{ env.IMAGE_TAG }}
+            image: registry.digitalocean.com/mapo-registry/mapo-backend:develop
             ports:
               - "8000:8000"
             environment:
