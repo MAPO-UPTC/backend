@@ -1,3 +1,8 @@
+# Modelo para detalle de lote (lot_detail)
+
+# ...existing code...
+
+# Modelo para detalle de lote (lot_detail)
 
 import uuid
 from typing import Optional
@@ -18,6 +23,16 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 class Base(DeclarativeBase):
     pass
 
+
+class LotDetail(Base):
+    __tablename__ = "lot_detail"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    lot_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+    presentation_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+    quantity_received: Mapped[int] = mapped_column(Integer, nullable=False)
+    quantity_available: Mapped[int] = mapped_column(Integer, nullable=False)
+    unit_cost: Mapped[float] = mapped_column(Float, nullable=False)
+    batch_number: Mapped[str] = mapped_column(String, nullable=True)
 # Modelo para presentaciones de producto
 class ProductPresentation(Base):
     __tablename__ = "product_presentation"
@@ -42,12 +57,24 @@ class BulkConversion(Base):
     status = mapped_column(String, default="ACTIVE")
 
 
+
+import os
+from sqlalchemy import func
+
+def uuid_default():
+    # Si es SQLite, usar uuid.uuid4 en Python. Si es PostgreSQL, usar gen_random_uuid()
+    db_url = os.getenv("DATABASE_URL", "sqlite:///")
+    if db_url.startswith("sqlite"):
+        return uuid.uuid4
+    else:
+        return text("gen_random_uuid()")
+
 class Person(Base):
     __tablename__ = "person"
     __table_args__ = (PrimaryKeyConstraint("id", name="person_pk"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, server_default=text("gen_random_uuid()")
+        Uuid, primary_key=True, default=uuid_default()
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     last_name: Mapped[str] = mapped_column(String, nullable=False)
@@ -55,6 +82,7 @@ class Person(Base):
     document_number: Mapped[str] = mapped_column(String, nullable=False)
 
     user: Mapped[list["User"]] = relationship("User", back_populates="person")
+
 
 
 class Product(Base):
@@ -65,7 +93,7 @@ class Product(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, server_default=text("gen_random_uuid()")
+        Uuid, primary_key=True, default=uuid_default()
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=False)
@@ -73,22 +101,25 @@ class Product(Base):
     image_url: Mapped[Optional[str]] = mapped_column(String)
 
 
+
 class Role(Base):
     __tablename__ = "role"
     __table_args__ = (PrimaryKeyConstraint("id", name="role_pk"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, server_default=text("gen_random_uuid()")
+        Uuid, primary_key=True, default=uuid_default()
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
+
 
 
 class UserRole(Base):
     __tablename__ = "user_role"
     __table_args__ = (PrimaryKeyConstraint("role_id", "user_id", name="user_role_pk"),)
 
-    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
-    role_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid_default())
+    role_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid_default())
+
 
 
 
@@ -101,7 +132,7 @@ class User(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, server_default=text("gen_random_uuid()")
+        Uuid, primary_key=True, default=uuid_default()
     )
     uid: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, nullable=False)

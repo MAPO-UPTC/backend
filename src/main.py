@@ -1,4 +1,5 @@
 import time
+import os
 
 import firebase_admin
 import uvicorn
@@ -10,6 +11,7 @@ from sqlalchemy import text
 
 # Configuración y logging
 from config.settings import settings
+print(f"[MAPO] DATABASE_URL usado: {os.environ.get('DATABASE_URL')}")
 from database import engine
 from models_db import Base
 

@@ -3,10 +3,22 @@
 Script para iniciar el servidor MAPO en modo desarrollo
 Estructura reorganizada con src/
 """
+
 import subprocess
 import sys
 import os
 from pathlib import Path
+# Cargar variables de entorno desde .env
+try:
+    from dotenv import load_dotenv
+    dotenv_path = Path(__file__).parent / ".env"
+    if dotenv_path.exists():
+        load_dotenv(dotenv_path, override=True)
+        print(f"[MAPO] .env cargado desde: {dotenv_path}")
+    else:
+        print("[MAPO] No se encontró archivo .env en el directorio del backend.")
+except ImportError:
+    print("[MAPO] python-dotenv no está instalado. Instálalo con: pip install python-dotenv")
 
 def main():
     print("=" * 60)

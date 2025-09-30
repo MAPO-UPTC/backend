@@ -23,52 +23,66 @@ def create_user_service(user_data: SignUpSchema):
     Servicio para crear un usuario en Firebase y en la base de datos local.
     """
     print(f"Creating account for: {user_data}")
+    # 1. Verificar primero en la base local
+    with Session(engine) as session:
+        existing_user = session.query(User).filter_by(email=user_data.email).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="User already exists in local DB")
+
+    # 2. Crear usuario en Firebase
     try:
-        # Crear usuario en Firebase Auth
         firebase_user = auth.create_user_with_email_and_password(
             user_data.email, user_data.password
         )
         print("Firebase localId:", firebase_user["localId"])
-
-        # Guardar usuario en base de datos local
-        with Session(engine) as session:
-            existing_user = session.query(User).filter_by(email=user_data.email).first()
-            if not existing_user:
-                # Primero crear la persona
-                db_person = Person(
-                    name=user_data.name,
-                    last_name=user_data.last_name,
-                    document_type=user_data.document_type,
-                    document_number=user_data.document_number,
-                )
-                session.add(db_person)
-                session.flush()  # Para obtener el ID de la persona
-
-                # Luego crear el usuario
-                db_user = User(
-                    email=user_data.email,
-                    uid=firebase_user["localId"],
-                    person_id=db_person.id,
-                )
-                session.add(db_user)
-                session.flush()
-
-                db_user_role = UserRole(
-                    user_id=db_user.id,
-                    role_id=RoleManager.get_default_role_uuid(),
-                )
-                session.add(db_user_role)
-                session.commit()
-                session.refresh(db_user)
-                return {
-                    "message": "User created successfully",
-                    "user_id": str(db_user.id),
-                }
-            else:
-                raise HTTPException(status_code=400, detail="User already exists")
     except Exception as e:
         print("Error al crear usuario en Firebase:", e)
+        # Si el error es de email ya registrado en Firebase
+        if "EMAIL_EXISTS" in str(e):
+            raise HTTPException(status_code=400, detail="User already exists in Firebase")
         raise HTTPException(status_code=400, detail=str(e))
+
+    # 3. Guardar usuario en base de datos local
+    try:
+        with Session(engine) as session:
+            print("Storing user in local DB...")
+            db_person = Person(
+                name=user_data.name,
+                last_name=user_data.last_name,
+                document_type=user_data.document_type,
+                document_number=user_data.document_number,
+            )
+            session.add(db_person)
+            session.flush()  # Para obtener el ID de la persona
+
+            db_user = User(
+                email=user_data.email,
+                uid=firebase_user["localId"],
+                person_id=db_person.id,
+            )
+            session.add(db_user)
+            session.flush()
+
+            db_user_role = UserRole(
+                user_id=db_user.id,
+                role_id=RoleManager.get_default_role_uuid(),
+            )
+            session.add(db_user_role)
+            session.commit()
+            session.refresh(db_user)
+            return {
+                "message": "User created successfully",
+                "user_id": str(db_user.id),
+            }
+    except Exception as e:
+        print("Error al guardar usuario en base local, eliminando de Firebase:", e)
+        # Intentar eliminar el usuario de Firebase para evitar inconsistencia
+        try:
+            firebase_admin = firebase.auth()
+            firebase_admin.delete_user(firebase_user["localId"])
+        except Exception as del_e:
+            print("Error eliminando usuario de Firebase:", del_e)
+        raise HTTPException(status_code=400, detail="Error saving user in DB. User removed from Firebase. " + str(e))
 
 
 # COMENTADO - Login con Google (no se usará por ahora)
