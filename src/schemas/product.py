@@ -1,7 +1,29 @@
-import uuid
-from typing import Optional
 
+import uuid
+from typing import List, Optional
 from pydantic import BaseModel
+
+
+class ProductPresentationCreate(BaseModel):
+    presentation_name: str
+    quantity: float
+    unit: str
+    price: float
+    sku: Optional[str] = None
+    active: Optional[int] = 1
+
+class ProductCreate(BaseModel):
+    name: str
+    description: str
+    category_id: Optional[uuid.UUID] = None
+    image_url: Optional[str] = None
+    presentations: List[ProductPresentationCreate]
+
+# Esquema para apertura de bulto y habilitar venta a granel
+class BulkConversionCreate(BaseModel):
+    source_lot_detail_id: int
+    target_presentation_id: int  # id de la presentación "granel"
+    quantity: float
 
 
 class ProductCreate(BaseModel):

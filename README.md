@@ -34,11 +34,13 @@ backend/
 ## 🚀 Inicio Rápido
 
 ### 1. Clonar e Instalar
+
 ```bash
 git clone <repository-url>
 cd mapo-backend
-python -m venv venv
-venv\Scripts\activate  # Windows
+# ⚠️ Requiere Python 3.9.x
+py -3.9 -m venv mapo
+mapo\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
@@ -58,9 +60,10 @@ python start_dev.py
 - 📚 **Docs**: http://localhost:8000/docs
 - 🔍 **Health**: http://localhost:8000/health
 
+
 ## 🛠️ Tecnologías
 
-- **🐍 Backend**: FastAPI + Python 3.9+
+- **🐍 Backend**: FastAPI + Python 3.9.x (⚠️ No compatible con 3.10+)
 - **🗄️ Base de Datos**: PostgreSQL / SQLite (desarrollo)
 - **🔐 Autenticación**: Firebase Admin SDK
 - **🐳 Contenedores**: Docker + Docker Compose
