@@ -14,7 +14,7 @@ from database import engine
 from models_db import Base
 
 # Routers
-from routers import client, inventory, product, user
+from routers import client, inventory, product, user, category
 from utils.logging_config import (
     log_error,
     log_request,
@@ -127,6 +127,7 @@ app.include_router(user.router, prefix="/users", tags=["users"])
 app.include_router(product.router, prefix="/products", tags=["products"])
 app.include_router(client.router, prefix="/clients", tags=["clients"])
 app.include_router(inventory.router, prefix="/inventory", tags=["inventory"])
+app.include_router(category.router, prefix="/category", tags=["category"])
 
 
 @app.get("/")

@@ -18,6 +18,7 @@ class Entity(str, Enum):
     CLIENTS = "CLIENTS"
     SALES_ORDERS = "SALES_ORDERS"
     INVENTORY_STOCK = "INVENTORY_STOCK"
+    CATEGORIES = "CATEGORIES"
 
 
 class PermissionLevel(str, Enum):

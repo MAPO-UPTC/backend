@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -33,5 +35,29 @@ class LoginSchema(BaseModel):
             "example": {
                 "email": "user@example.com",
                 "password": "string",
+            }
+        }
+class CategorySchema(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "name": "Alimentos",
+                "description": "Productos comestibles para mascotas"
+            }
+        }
+
+
+class CategoryUpdateSchema(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "name": "Juguetes",
+                "description": "Artículos de entretenimiento para mascotas"
             }
         }

@@ -37,7 +37,7 @@ def main():
         env.setdefault("ENVIRONMENT", "development")
         env.setdefault("DEBUG", "true")
         env.setdefault("SECRET_KEY", "dev-secret-key-change-in-production")
-        env.setdefault("DATABASE_URL", "sqlite:///./mapo_dev.db")
+        env.setdefault("DATABASE_URL", "postgresql://mapo:a123@localhost:5432/mapo-dev")
         env.setdefault("FIREBASE_PROJECT_ID", "desarrollo-local")
         env["PYTHONPATH"] = str(src_path)
         

@@ -81,3 +81,23 @@ class User(Base):
     person_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
 
     person: Mapped["Person"] = relationship("Person", back_populates="user")
+
+class Category(Base):
+    __tablename__ = "category"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="category_pk"),
+        UniqueConstraint("name", name="category_name_uk"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    #conectar categorias con productos
+    products: Mapped[list["Product"]] = relationship(
+        "Product",
+        backref="category",
+        primaryjoin="Category.id == foreign(Product.category_id)",
+    )
