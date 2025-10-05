@@ -7,7 +7,18 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from database import get_db
-from utils.auth import get_current_user
+from utils.auth import get_current_user_from_db
+from schemas.sales import SimpleSaleCreate, SaleResponse, SalesReportFilter
+from services.sales_service import (
+    create_sale,
+    get_sales,
+    get_sale_by_id,
+    get_sale_by_code,
+    get_sale_details_by_sale,
+    get_sales_report,
+    get_best_selling_products,
+    get_daily_sales_summary
+)
 
 router = APIRouter(
     prefix="/sales",
@@ -24,101 +35,176 @@ async def test_sales():
     return {"message": "Sales router funcionando"}
 
 
-@router.post("/")
-async def create_sale(
-    sale: dict,
+@router.post("/", response_model=SaleResponse)
+async def create_sale_endpoint(
+    sale: SimpleSaleCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user = Depends(get_current_user_from_db)
 ):
     """
-    Crear una nueva venta - Versión simplificada
+    Crear una nueva venta completa con sus detalles
     """
     try:
-        # Simulación básica
-        return {
-            "message": "Venta creada exitosamente",
-            "sale_id": "VEN-20241005001",
-            "sale_code": "VEN-20241005001",
-            "customer_id": sale.get("customer_id", 1),
-            "total": sale.get("total", 100.00),
-            "created_by": current_user.get("id", "unknown"),
-            "sale_date": datetime.now().isoformat()
-        }
-    except Exception as e:
+        # Obtener el ID del usuario desde la base de datos
+        user_id = str(current_user.id)
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Usuario no identificado"
+            )
+        # Convertir a dict para compatibilidad con el servicio
+        sale_data = sale.dict()
+        
+        db_sale = create_sale(db, sale_data, user_id)
+        return db_sale
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error creando venta: {str(e)}"
         )
 
 
-@router.get("/")
-async def get_sales(
+@router.get("/", response_model=List[SaleResponse])
+async def get_sales_endpoint(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user = Depends(get_current_user_from_db)
 ):
     """
-    Obtener lista de ventas - Versión simplificada
+    Obtener lista de ventas con paginación
     """
-    return [
-        {
-            "id": 1,
-            "sale_code": "VEN-20241005001",
-            "sale_date": "2024-10-05T10:30:00",
-            "customer_id": 1,
-            "total": 150.00,
-            "user_id": 1
-        },
-        {
-            "id": 2,
-            "sale_code": "VEN-20241005002", 
-            "sale_date": "2024-10-05T14:30:00",
-            "customer_id": 2,
-            "total": 225.00,
-            "user_id": 1
-        }
-    ]
+    try:
+        sales = get_sales(db, skip=skip, limit=limit)
+        return sales
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error obteniendo ventas: {str(e)}"
+        )
 
 
 @router.get("/reports/summary")
-async def get_sales_report(
+async def get_sales_report_endpoint(
+    start_date: datetime = None,
+    end_date: datetime = None,
+    customer_id: str = None,
+    user_id: str = None,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user = Depends(get_current_user_from_db)
 ):
     """
-    Generar reporte de ventas - Versión simplificada
+    Generar reporte de ventas con filtros opcionales
     """
-    return {
-        "total_sales": 2,
-        "total_revenue": 375.00,
-        "period_start": "2024-10-01T00:00:00",
-        "period_end": "2024-10-05T23:59:59",
-        "generated_at": datetime.now().isoformat()
-    }
+    try:
+        filters = SalesReportFilter(
+            start_date=start_date,
+            end_date=end_date,
+            customer_id=customer_id,
+            user_id=user_id
+        )
+        report = get_sales_report(db, filters)
+        return report
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generando reporte: {str(e)}"
+        )
 
 
 @router.get("/reports/best-products")
-async def get_best_selling_products(
+async def get_best_selling_products_endpoint(
+    limit: int = Query(10, ge=1, le=50),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user = Depends(get_current_user_from_db)
 ):
     """
-    Obtener productos más vendidos - Versión simplificada
+    Obtener productos más vendidos
     """
-    return {
-        "best_selling_products": [
-            {
-                "presentation_id": 1,
-                "presentation_name": "Comida Perros Premium 20kg",
-                "total_sold": 25,
-                "total_revenue": 1250.00
-            },
-            {
-                "presentation_id": 2,
-                "presentation_name": "Comida Gatos Premium 10kg",
-                "total_sold": 15,
-                "total_revenue": 750.00
-            }
-        ]
-    }
+    try:
+        products = get_best_selling_products(db, limit=limit)
+        return {
+            "best_selling_products": products,
+            "generated_at": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error obteniendo productos más vendidos: {str(e)}"
+        )
+
+
+@router.get("/{sale_id}", response_model=SaleResponse)
+async def get_sale_by_id_endpoint(
+    sale_id: str,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user_from_db)
+):
+    """
+    Obtener una venta específica por ID
+    """
+    try:
+        sale = get_sale_by_id(db, sale_id)
+        if not sale:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Venta con ID {sale_id} no encontrada"
+            )
+        return sale
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error obteniendo venta: {str(e)}"
+        )
+
+
+@router.get("/code/{sale_code}", response_model=SaleResponse)
+async def get_sale_by_code_endpoint(
+    sale_code: str,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user_from_db)
+):
+    """
+    Obtener una venta específica por código
+    """
+    try:
+        sale = get_sale_by_code(db, sale_code)
+        if not sale:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Venta con código {sale_code} no encontrada"
+            )
+        return sale
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error obteniendo venta: {str(e)}"
+        )
+
+
+@router.get("/reports/daily/{date}")
+async def get_daily_summary(
+    date: datetime,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user_from_db)
+):
+    """
+    Obtener resumen de ventas para un día específico
+    """
+    try:
+        summary = get_daily_sales_summary(db, date)
+        return summary
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error obteniendo resumen diario: {str(e)}"
+        )

@@ -1,0 +1,11 @@
+{
+  "customer_id": "67825f4c-e43f-4871-8b46-6016ceebbecf",
+  "status": "completed",
+  "items": [
+    {
+      "presentation_id": "a83e3b1a-1038-4ec6-aea9-309592e1e41c",
+      "quantity": 1,
+      "unit_price": 12.75
+    }
+  ]
+}

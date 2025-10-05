@@ -4,8 +4,9 @@ Servicio para manejo de inventario (ingreso de productos)
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from src.models_db import Lot, LotDetail, ProductPresentation
-from src.schemas.inventory import LotCreate, LotDetailCreate
+from sqlalchemy import func
+from src.models_db import Lot, LotDetail, ProductPresentation, Supplier
+from src.schemas.inventory import LotCreate, LotDetailCreate, SupplierCreate
 
 
 def create_lot(db: Session, lot: LotCreate) -> Lot:
@@ -13,9 +14,11 @@ def create_lot(db: Session, lot: LotCreate) -> Lot:
     Crear un nuevo lote de compra
     """
     db_lot = Lot(
-        supplier_name=lot.supplier_name,
-        purchase_date=lot.purchase_date,
-        invoice_number=lot.invoice_number,
+        lot_code=lot.lot_code,
+        supplier_id=lot.supplier_id,
+        received_date=lot.received_date,
+        expiry_date=lot.expiry_date,
+        status=lot.status,
         total_cost=lot.total_cost,
         notes=lot.notes
     )
@@ -44,18 +47,12 @@ def create_lot_detail(db: Session, lot_detail: LotDetailCreate, lot_id: str) -> 
         quantity_received=lot_detail.quantity_received,
         quantity_available=lot_detail.quantity_received,  # Inicialmente igual a recibido
         unit_cost=lot_detail.unit_cost,
-        batch_number=lot_detail.batch_number,
-        expiry_date=lot_detail.expiry_date,
-        supplier_info=lot_detail.supplier_info
+        batch_number=lot_detail.batch_number
     )
     
     db.add(db_lot_detail)
     db.commit()
     db.refresh(db_lot_detail)
-    
-    # Actualizar el stock de la presentación
-    presentation.stock += lot_detail.quantity_received
-    db.commit()
     
     return db_lot_detail
 
@@ -100,12 +97,12 @@ def get_lot_details_by_lot(db: Session, lot_id: str) -> List[LotDetail]:
     return db.query(LotDetail).filter(LotDetail.lot_id == lot_id).all()
 
 
-def get_available_stock_by_presentation(db: Session, presentation_id: int) -> int:
+def get_available_stock_by_presentation(db: Session, presentation_id: str) -> int:
     """
     Obtener el stock disponible total para una presentación específica
     """
     result = db.query(
-        db.func.sum(LotDetail.quantity_available)
+        func.sum(LotDetail.quantity_available)
     ).filter(
         LotDetail.presentation_id == presentation_id
     ).scalar()
@@ -113,7 +110,7 @@ def get_available_stock_by_presentation(db: Session, presentation_id: int) -> in
     return result or 0
 
 
-def reduce_stock(db: Session, presentation_id: int, quantity: int) -> bool:
+def reduce_stock(db: Session, presentation_id: str, quantity: int) -> bool:
     """
     Reducir stock de una presentación usando FIFO (First In, First Out)
     Retorna True si fue exitoso, False si no hay suficiente stock
@@ -128,7 +125,7 @@ def reduce_stock(db: Session, presentation_id: int, quantity: int) -> bool:
     lot_details = db.query(LotDetail).join(Lot).filter(
         LotDetail.presentation_id == presentation_id,
         LotDetail.quantity_available > 0
-    ).order_by(Lot.purchase_date).all()
+    ).order_by(Lot.received_date).all()
     
     remaining_to_reduce = quantity
     
@@ -145,14 +142,6 @@ def reduce_stock(db: Session, presentation_id: int, quantity: int) -> bool:
             remaining_to_reduce -= detail.quantity_available
             detail.quantity_available = 0
     
-    # Actualizar también el stock en la presentación
-    presentation = db.query(ProductPresentation).filter(
-        ProductPresentation.id == presentation_id
-    ).first()
-    
-    if presentation:
-        presentation.stock -= quantity
-    
     db.commit()
     return True
 
@@ -164,21 +153,52 @@ def get_stock_report(db: Session) -> List[dict]:
     query = db.query(
         ProductPresentation.id,
         ProductPresentation.presentation_name,
-        ProductPresentation.stock,
-        db.func.sum(LotDetail.quantity_available).label("stock_by_lots")
-    ).join(LotDetail).group_by(
+        func.sum(LotDetail.quantity_available).label("stock_available")
+    ).outerjoin(LotDetail).group_by(
         ProductPresentation.id,
-        ProductPresentation.presentation_name,
-        ProductPresentation.stock
+        ProductPresentation.presentation_name
     ).all()
     
     return [
         {
             "presentation_id": row.id,
             "presentation_name": row.presentation_name,
-            "stock_in_presentation": row.stock,
-            "stock_by_lots": row.stock_by_lots or 0,
-            "discrepancy": row.stock - (row.stock_by_lots or 0)
+            "stock_available": row.stock_available or 0,
+            "last_updated": datetime.now().isoformat()
         }
         for row in query
     ]
+
+
+# FUNCIONES PARA PROVEEDORES
+# ==========================
+
+def create_supplier(db: Session, supplier: SupplierCreate) -> Supplier:
+    """
+    Crear un nuevo proveedor
+    """
+    db_supplier = Supplier(
+        name=supplier.name,
+        address=supplier.address,
+        phone_number=supplier.phone_number,
+        email=supplier.email,
+        contact_person=supplier.contact_person
+    )
+    db.add(db_supplier)
+    db.commit()
+    db.refresh(db_supplier)
+    return db_supplier
+
+
+def get_suppliers(db: Session, skip: int = 0, limit: int = 100) -> List[Supplier]:
+    """
+    Obtener lista de proveedores
+    """
+    return db.query(Supplier).offset(skip).limit(limit).all()
+
+
+def get_supplier_by_id(db: Session, supplier_id: str) -> Optional[Supplier]:
+    """
+    Obtener un proveedor por su ID
+    """
+    return db.query(Supplier).filter(Supplier.id == supplier_id).first()

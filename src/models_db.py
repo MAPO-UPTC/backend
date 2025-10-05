@@ -39,23 +39,35 @@ class LotDetail(Base):
     __tablename__ = "lot_detail"
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     lot_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
-    presentation_id: Mapped[int] = mapped_column(Integer, ForeignKey("product_presentation.id"), nullable=False)
+    presentation_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("product_presentation.id"), nullable=False)
     quantity_received: Mapped[int] = mapped_column(Integer, nullable=False)
     quantity_available: Mapped[int] = mapped_column(Integer, nullable=False)
     unit_cost: Mapped[float] = mapped_column(Float, nullable=False)
-    batch_number: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    expiry_date: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
-    supplier_info: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    batch_number: Mapped[str] = mapped_column(String, nullable=False)
 
 
 class Lot(Base):
     __tablename__ = "lot"
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    supplier_name: Mapped[str] = mapped_column(String, nullable=False)
-    purchase_date: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
-    invoice_number: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    lot_code: Mapped[str] = mapped_column(String, nullable=False)
+    supplier_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("supplier.id"), nullable=False)
+    expiry_date: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
+    received_date: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False)
     total_cost: Mapped[float] = mapped_column(Float, nullable=False)
     notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    created_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=func.now())
+    updated_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
+
+
+class Supplier(Base):
+    __tablename__ = "supplier"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    address: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    phone_number: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    email: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    contact_person: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
 
 # MODELOS DE PERSONAS Y USUARIOS
@@ -161,21 +173,22 @@ class BulkConversion(Base):
 
 class Sale(Base):
     __tablename__ = "sale"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     sale_code: Mapped[str] = mapped_column(String, nullable=False)
     sale_date: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
-    customer_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    customer_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("person.id"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("user.id"), nullable=False)
     total: Mapped[float] = mapped_column(Float, nullable=False)
-    notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    status: Mapped[str] = mapped_column(String, nullable=False)
 
 
 class SaleDetail(Base):
     __tablename__ = "sale_detail"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    sale_id: Mapped[int] = mapped_column(Integer, ForeignKey("sale.id"), nullable=False)
-    presentation_id: Mapped[int] = mapped_column(Integer, ForeignKey("product_presentation.id"), nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    sale_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("sale.id"), nullable=False)
+    presentation_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("product_presentation.id"), nullable=False)
+    lot_detail_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("lot_detail.id"), nullable=False)
+    bulk_conversion_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("bulk_conversion.id"), nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     unit_price: Mapped[float] = mapped_column(Float, nullable=False)
-    discount: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
-    subtotal: Mapped[float] = mapped_column(Float, nullable=False)
+    line_total: Mapped[float] = mapped_column(Float, nullable=False)
