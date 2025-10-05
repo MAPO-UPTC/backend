@@ -32,9 +32,9 @@ def main():
         return 1
     
     # Verificar entorno virtual
-    if not Path("venv").exists():
+    if not Path("mapo").exists():
         print("❌ Error: No se encuentra el entorno virtual")
-        print("   Crea el entorno virtual con: python -m venv venv")
+        print("   Crea el entorno virtual con: python -m mapo venv")
         return 1
     
     try:
