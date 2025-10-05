@@ -11,27 +11,7 @@ from src.schemas.inventory import (
     LotCreate, LotResponse, LotDetailCreate, LotDetailResponse
 )
 from src.services import inventory_service
-from src.utils.auth import get_current_user
-from src.schemas.user import UserResponse
-
-router = APIRouter(
-    prefix="/inventory",
-    tags=["inventory"],
-    responses={404: {"description": "Not found"}},
-)ra manejo de inventario (ingreso de productos)
-"""
-from datetime import datetime
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
-
-from src.database import get_db
-from src.schemas.inventory import (
-    LotCreate, LotResponse, LotDetailCreate, LotDetailResponse
-)
-from src.services import inventory_service
-from src.utils.auth import get_current_user
-from src.schemas.user import UserResponse
+from src.config.permissions import require_permission
 
 router = APIRouter(
     prefix="/inventory",

@@ -63,16 +63,15 @@ class Lot(Base):
 
 class Person(Base):
     __tablename__ = "person"
-    id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, default=uuid.uuid4
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     last_name: Mapped[str] = mapped_column(String, nullable=False)
-    document_type: Mapped[str] = mapped_column(String, nullable=False)
-    document_number: Mapped[str] = mapped_column(String, nullable=False)
-    
-    # Relación con User
-    user: Mapped[Optional["User"]] = relationship("User", back_populates="person")
+    identification: Mapped[str] = mapped_column(String, nullable=False)
+    phone: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    email: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    address: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
 
 class User(Base):
@@ -80,15 +79,11 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         Uuid, primary_key=True, default=uuid_default()
     )
-    uid: Mapped[str] = mapped_column(String, nullable=False, unique=True)
-    email: Mapped[str] = mapped_column(String, nullable=False)
-    person_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("person.id"), nullable=False
+    firebase_uid: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    person_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("person.id"), nullable=False
     )
-    firebase_uid: Mapped[str] = mapped_column(String, nullable=False)
-    
-    # Relación con Person
-    person: Mapped["Person"] = relationship("Person", back_populates="user")
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
 class Role(Base):
@@ -97,6 +92,7 @@ class Role(Base):
         Uuid, primary_key=True, default=uuid_default()
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
 
 class UserRole(Base):
@@ -119,31 +115,28 @@ class Category(Base):
 
 class Product(Base):
     __tablename__ = "product"
-    id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, default=uuid.uuid4
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
-    description: Mapped[str] = mapped_column(String, nullable=False)
-    category_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("category.id"), nullable=True)
-    image_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    category_id: Mapped[int] = mapped_column(Integer, ForeignKey("category.id"), nullable=False)
     brand: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    base_unit: Mapped[str] = mapped_column(String, nullable=False)
+    base_unit: Mapped[str] = mapped_column(String, nullable=False, default="unidad")
 
 
 class ProductPresentation(Base):
     __tablename__ = "product_presentation"
-    id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, default=uuid.uuid4
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
     )
-    product_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("product.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(Integer, ForeignKey("product.id"), nullable=False)
     presentation_name: Mapped[str] = mapped_column(String, nullable=False)
-    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
-    unit: Mapped[str] = mapped_column(String, nullable=False)
-    sku: Mapped[str] = mapped_column(String, nullable=False)
+    unit_quantity: Mapped[float] = mapped_column(Float, nullable=False)
+    unit_type: Mapped[str] = mapped_column(String, nullable=False)
+    stock: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    price: Mapped[float] = mapped_column(Float, nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    created_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=func.now())
-    updated_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
-    price: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
 
 
 class BulkConversion(Base):

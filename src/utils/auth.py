@@ -13,6 +13,16 @@ from models_db import Person, Role, User, UserRole
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+
+def get_current_user_id(current_user: dict) -> int:
+    """
+    Extraer el ID del usuario desde el diccionario de usuario actual
+    """
+    if isinstance(current_user, dict):
+        return current_user.get("id") or current_user.get("user_id")
+    return getattr(current_user, "id", None)
+
+
 # En-memory storage para roles activos de usuarios
 
 

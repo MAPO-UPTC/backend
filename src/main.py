@@ -6,6 +6,7 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPBearer
 from firebase_admin import credentials
 from sqlalchemy import text
 
@@ -16,7 +17,8 @@ from database import engine
 from models_db import Base
 
 # Routers
-from routers import client, inventory, product, user
+from routers import client, product, user, category
+from routers import inventory_clean, sales_clean
 from utils.logging_config import (
     log_error,
     log_request,
@@ -69,14 +71,48 @@ except Exception as db_error:
             "Base de datos no disponible - funcionando sin persistencia de datos"
         )
 
-# Configurar FastAPI
+# Configurar FastAPI con esquema de seguridad para Swagger
 app = FastAPI(
     title="MAPO Backend API",
     description="API Backend para el sistema MAPO con autenticación Firebase y sistema de permisos",
     version="1.0.0",
     docs_url="/docs" if settings.DEBUG else None,  # Ocultar docs en producción
     redoc_url="/redoc" if settings.DEBUG else None,
+    # Configurar seguridad para Swagger
+    dependencies=[],
+    swagger_ui_parameters={"persistAuthorization": True}
 )
+
+# Agregar esquema de seguridad JWT para Swagger
+from fastapi.openapi.utils import get_openapi
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="MAPO Backend API",
+        version="1.0.0",
+        description="API Backend para el sistema MAPO con autenticación Firebase y sistema de permisos",
+        routes=app.routes,
+    )
+    openapi_schema["components"]["securitySchemes"] = {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        }
+    }
+    # Aplicar seguridad a todos los endpoints que la requieren
+    for path in openapi_schema["paths"]:
+        for method in openapi_schema["paths"][path]:
+            if method.lower() != "options":
+                openapi_schema["paths"][path][method]["security"] = [
+                    {"BearerAuth": []}
+                ]
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 # CORS configuration usando variables de entorno
 app.add_middleware(
@@ -126,9 +162,11 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Include routers
 app.include_router(user.router, prefix="/users", tags=["users"])
+app.include_router(category.router, prefix="/categories", tags=["categories"])
 app.include_router(product.router, prefix="/products", tags=["products"])
 app.include_router(client.router, prefix="/clients", tags=["clients"])
-app.include_router(inventory.router, prefix="/inventory", tags=["inventory"])
+app.include_router(inventory_clean.router, tags=["inventory"])
+app.include_router(sales_clean.router, tags=["sales"])
 
 
 @app.get("/")

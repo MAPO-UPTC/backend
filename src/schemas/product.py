@@ -10,11 +10,13 @@ class ProductPresentationCreate(BaseModel):
     unit: str
     price: float
     sku: Optional[str] = None
-    active: Optional[int] = 1
+    active: Optional[bool] = True
 
 class ProductCreate(BaseModel):
     name: str
     description: str
+    brand: Optional[str] = None
+    base_unit: Optional[str] = "kg"  # Unidad base por defecto
     category_id: Optional[uuid.UUID] = None
     image_url: Optional[str] = None
     presentations: List[ProductPresentationCreate]
@@ -26,16 +28,11 @@ class BulkConversionCreate(BaseModel):
     quantity: float
 
 
-class ProductCreate(BaseModel):
-    name: str
-    description: str
-    category_id: Optional[uuid.UUID] = None
-    image_url: Optional[str] = None
-
-
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    brand: Optional[str] = None
+    base_unit: Optional[str] = None
     category_id: Optional[uuid.UUID] = None
     image_url: Optional[str] = None
 
@@ -44,6 +41,8 @@ class ProductResponse(BaseModel):
     id: uuid.UUID
     name: str
     description: str
+    brand: Optional[str] = None
+    base_unit: Optional[str] = None
     category_id: Optional[uuid.UUID] = None
     image_url: Optional[str] = None
 

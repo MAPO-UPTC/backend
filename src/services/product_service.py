@@ -44,9 +44,8 @@ def sell_bulk_service(bulk_conversion_id: int, quantity: float, unit_price: floa
             "bulk_conversion_id": bulk.id,
             "remaining_bulk": bulk.remaining_bulk
         }
-from models_db import BulkConversion
+from models_db import BulkConversion, LotDetail
 from schemas.product import BulkConversionCreate
-from models_db import ProductPresentation
 from sqlalchemy import select
 from datetime import datetime
 
@@ -57,12 +56,12 @@ def open_bulk_conversion_service(data: BulkConversionCreate):
     with Session(engine) as session:
         # Buscar el detalle de lote
         lot_detail = session.execute(
-            select(ProductPresentation).where(ProductPresentation.id == data.source_lot_detail_id)
+            select(LotDetail).where(LotDetail.id == data.source_lot_detail_id)
         ).scalar_one_or_none()
         if not lot_detail:
             raise HTTPException(status_code=404, detail="LotDetail not found")
         # Validar que hay bultos disponibles
-        if getattr(lot_detail, "quantity_available", None) is None or lot_detail.quantity_available < 1:
+        if lot_detail.quantity_available < 1:
             raise HTTPException(status_code=400, detail="No hay bultos disponibles para abrir")
         # Restar 1 bulto
         lot_detail.quantity_available -= 1
@@ -89,7 +88,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from database import engine
-from models_db import Product
+from models_db import Product, ProductPresentation
 from schemas.product import ProductCreate, ProductUpdate
 
 
@@ -103,6 +102,8 @@ def create_product_service(product_data: ProductCreate):
             db_product = Product(
                 name=product_data.name,
                 description=product_data.description,
+                brand=product_data.brand,
+                base_unit=product_data.base_unit,
                 category_id=product_data.category_id,
                 image_url=product_data.image_url,
             )
@@ -130,6 +131,8 @@ def create_product_service(product_data: ProductCreate):
                     "id": str(db_product.id),
                     "name": db_product.name,
                     "description": db_product.description,
+                    "brand": db_product.brand,
+                    "base_unit": db_product.base_unit,
                     "category_id": (
                         str(db_product.category_id) if db_product.category_id else None
                     ),
@@ -152,6 +155,8 @@ def get_products_service():
                 "id": str(product.id),
                 "name": product.name,
                 "description": product.description,
+                "brand": product.brand,
+                "base_unit": product.base_unit,
                 "category_id": (
                     str(product.category_id) if product.category_id else None
                 ),
@@ -174,6 +179,8 @@ def get_product_by_id_service(product_id: uuid.UUID):
             "id": str(product.id),
             "name": product.name,
             "description": product.description,
+            "brand": product.brand,
+            "base_unit": product.base_unit,
             "category_id": (str(product.category_id) if product.category_id else None),
             "image_url": product.image_url,
         }
@@ -204,6 +211,8 @@ def update_product_service(product_id: uuid.UUID, product_data: ProductUpdate):
                 "id": str(product.id),
                 "name": product.name,
                 "description": product.description,
+                "brand": product.brand,
+                "base_unit": product.base_unit,
                 "category_id": (
                     str(product.category_id) if product.category_id else None
                 ),

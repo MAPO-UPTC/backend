@@ -1,7 +1,7 @@
 # from utils.auth import split_full_name  # Comentado - no se usa sin Google login
 import pyrebase
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from config.permissions import PermissionManager
 
@@ -23,7 +23,7 @@ def create_user_service(user_data: SignUpSchema):
     Servicio para crear un usuario en Firebase y en la base de datos local.
     """
     print(f"Creating account for: {user_data}")
-    # 1. Verificar primero en la base local
+    # 1. Verificar primero en la base local - buscar por email en User
     with Session(engine) as session:
         existing_user = session.query(User).filter_by(email=user_data.email).first()
         if existing_user:
@@ -56,9 +56,10 @@ def create_user_service(user_data: SignUpSchema):
             session.flush()  # Para obtener el ID de la persona
 
             db_user = User(
-                email=user_data.email,
                 uid=firebase_user["localId"],
+                email=user_data.email,
                 person_id=db_person.id,
+                firebase_uid=firebase_user["localId"],
             )
             session.add(db_user)
             session.flush()
@@ -159,9 +160,12 @@ def update_user_service(user_id: str, user_data: dict):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Actualizar campos del usuario
+        # Actualizar campos del usuario (el email está en Person, no en User)
         if "email" in user_data and user_data["email"] is not None:
-            user.email = user_data["email"]
+            # Obtener la persona asociada al usuario
+            person = session.query(Person).filter(Person.id == user.person_id).first()
+            if person:
+                person.email = user_data["email"]
 
         # Actualizar campos de la persona
         if "person" in user_data and user_data["person"] is not None:
@@ -184,12 +188,22 @@ def login_service(email: str, password: str):
         # Login en Firebase
         firebase_user = auth.sign_in_with_email_and_password(email, password)
 
-        # Obtener usuario de la base de datos
+        # Obtener usuario de la base de datos con eager loading de la persona
         with Session(engine) as session:
-            user = session.query(User).join(Person).filter(User.email == email).first()
+            print(f"Buscando usuario con email: {email}")
+            try:
+                user = session.query(User).options(selectinload(User.person)).filter(User.email == email).first()
+                print(f"Usuario encontrado: {user}")
+            except Exception as e:
+                print(f"Error en consulta de base de datos: {e}")
+                raise HTTPException(status_code=400, detail="Database query error")
+                
             if user:
+                print(f"Usuario ID: {user.id}, Person ID: {user.person_id}")
                 # Obtener roles
+                print("Obteniendo roles del usuario...")
                 user_roles = session.query(UserRole).filter_by(user_id=user.id).all()
+                print(f"Roles encontrados: {len(user_roles)}")
                 roles = []
 
                 for user_role in user_roles:
@@ -199,7 +213,9 @@ def login_service(email: str, password: str):
                         if role_enum:
                             roles.append(role_enum)
 
+                print(f"Roles procesados: {roles}")
                 # Calcular permisos combinados
+                print("Calculando permisos...")
                 all_permissions = {}
                 for role in roles:
                     role_permissions = PermissionManager.get_user_permissions(role)
@@ -220,6 +236,9 @@ def login_service(email: str, password: str):
                             ]:
                                 all_permissions[entity][action] = level
 
+                print("Preparando respuesta...")
+                print(f"User person: {user.person}")
+                print(f"User email: {user.email}")
                 return {
                     "message": "Login successful",
                     "idToken": firebase_user["idToken"],
@@ -235,9 +254,14 @@ def login_service(email: str, password: str):
                     },
                 }
 
+        print(f"Usuario no encontrado en base de datos local para email: {email}")
         return {
             "message": "Login successful",
             "idToken": firebase_user["idToken"],
         }
-    except Exception:
+    except Exception as e:
+        print(f"Error en login_service: {str(e)}")
+        print(f"Tipo de error: {type(e).__name__}")
+        import traceback
+        print(f"Stack trace: {traceback.format_exc()}")
         raise HTTPException(status_code=400, detail="Invalid credentials")
