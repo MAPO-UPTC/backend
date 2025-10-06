@@ -1,41 +1,78 @@
-from typing import List
+from typing import List, Optional
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models_db import Person
-from schemas.user import PersonResponse
+from schemas.user import PersonResponse as UserPersonResponse
+from schemas.person import PersonCreate, PersonUpdate, PersonResponse
 from utils.auth import get_current_user_from_db
+from services.person_service import (
+    create_person_service,
+    get_all_persons_service,
+    get_person_by_id_service,
+    update_person_service,
+    search_persons_service
+)
 
 router = APIRouter()
 
 
+@router.post("/", status_code=201, response_model=PersonResponse)
+async def create_person(
+    person_data: PersonCreate
+):
+    """
+    Crear una nueva persona/cliente sin necesidad de cuenta de usuario.
+    No requiere autenticación - endpoint público para registro rápido de clientes.
+    
+    Validaciones automáticas:
+    - Documento único (tipo + número)
+    - Campos requeridos: name, last_name, document_type, document_number
+    """
+    return create_person_service(person_data)
+
+
 @router.get("/", response_model=List[PersonResponse])
 async def get_all_persons(
-    db: Session = Depends(get_db),
+    search: Optional[str] = Query(None, description="Buscar por nombre, apellido o documento"),
     current_user=Depends(get_current_user_from_db)
 ):
     """
     Obtener todas las personas registradas en el sistema.
+    Incluye funcionalidad de búsqueda opcional.
     Requiere autenticación.
     """
-    persons = db.query(Person).all()
-    return persons
+    if search:
+        return search_persons_service(search)
+    return get_all_persons_service()
 
 
 @router.get("/{person_id}", response_model=PersonResponse)
 async def get_person_by_id(
     person_id: uuid.UUID,
-    db: Session = Depends(get_db),
     current_user=Depends(get_current_user_from_db)
 ):
     """
     Obtener una persona específica por ID.
     Requiere autenticación.
     """
-    person = db.query(Person).filter(Person.id == person_id).first()
-    if not person:
-        raise HTTPException(status_code=404, detail="Person not found")
-    return person
+    return get_person_by_id_service(person_id)
+
+
+@router.put("/{person_id}", response_model=PersonResponse)
+async def update_person(
+    person_id: uuid.UUID,
+    person_data: PersonUpdate,
+    current_user=Depends(get_current_user_from_db)
+):
+    """
+    Actualizar información de una persona existente.
+    Requiere autenticación.
+    
+    Validaciones:
+    - Documento único (si se cambia)
+    - Solo actualiza campos proporcionados
+    """
+    return update_person_service(person_id, person_data)
