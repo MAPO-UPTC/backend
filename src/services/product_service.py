@@ -146,12 +146,44 @@ def create_product_service(product_data: ProductCreate):
 
 def get_products_service():
     """
-    Servicio para obtener todos los productos.
+    Servicio para obtener todos los productos con información de stock disponible.
     """
+    from sqlalchemy import func
+    from models_db import ProductPresentation, LotDetail
+    
     with Session(engine) as session:
         products = session.query(Product).all()
-        return [
-            {
+        result = []
+        
+        for product in products:
+            # Obtener presentaciones activas del producto
+            presentations = session.query(ProductPresentation).filter(
+                ProductPresentation.product_id == product.id,
+                ProductPresentation.active == True
+            ).all()
+            
+            # Calcular stock para cada presentación
+            presentations_with_stock = []
+            for presentation in presentations:
+                # Calcular stock disponible
+                stock_available = session.query(
+                    func.coalesce(func.sum(LotDetail.quantity_available), 0)
+                ).filter(
+                    LotDetail.presentation_id == presentation.id
+                ).scalar() or 0
+                
+                presentations_with_stock.append({
+                    "id": str(presentation.id),
+                    "presentation_name": presentation.presentation_name,
+                    "quantity": presentation.quantity,
+                    "unit": presentation.unit,
+                    "sku": presentation.sku,
+                    "price": float(presentation.price),
+                    "stock_available": int(stock_available),
+                    "active": presentation.active
+                })
+            
+            result.append({
                 "id": str(product.id),
                 "name": product.name,
                 "description": product.description,
@@ -161,9 +193,10 @@ def get_products_service():
                     str(product.category_id) if product.category_id else None
                 ),
                 "image_url": product.image_url,
-            }
-            for product in products
-        ]
+                "presentations": presentations_with_stock
+            })
+        
+        return result
 
 
 def get_product_by_id_service(product_id: uuid.UUID):

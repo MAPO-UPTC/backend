@@ -17,7 +17,7 @@ from database import engine
 from models_db import Base
 
 # Routers
-from routers import client, product, user, category
+from routers import client, product, user, category, person
 from routers import inventory, sales_clean
 from utils.logging_config import (
     log_error,
@@ -165,6 +165,7 @@ app.include_router(user.router, prefix="/users", tags=["users"])
 app.include_router(category.router, prefix="/categories", tags=["categories"])
 app.include_router(product.router, prefix="/products", tags=["products"])
 app.include_router(client.router, prefix="/clients", tags=["clients"])
+app.include_router(person.router, prefix="/persons", tags=["persons"])
 app.include_router(inventory.router, tags=["inventory"])
 app.include_router(sales_clean.router, tags=["sales"])
 

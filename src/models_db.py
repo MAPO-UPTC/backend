@@ -140,6 +140,9 @@ class Product(Base):
     image_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     brand: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     base_unit: Mapped[str] = mapped_column(String, nullable=False)
+    
+    # Relación con presentaciones
+    presentations: Mapped[list["ProductPresentation"]] = relationship("ProductPresentation", back_populates="product")
 
 
 class ProductPresentation(Base):
@@ -156,6 +159,9 @@ class ProductPresentation(Base):
     created_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
     price: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    
+    # Relación con producto
+    product: Mapped["Product"] = relationship("Product", back_populates="presentations")
 
 
 class BulkConversion(Base):
