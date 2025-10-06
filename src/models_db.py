@@ -166,12 +166,21 @@ class ProductPresentation(Base):
 
 class BulkConversion(Base):
     __tablename__ = "bulk_conversion"
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, autoincrement=True
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, primary_key=True, default=uuid.uuid4
     )
-    from_presentation_id: Mapped[int] = mapped_column(Integer, ForeignKey("product_presentation.id"), nullable=False)
-    to_presentation_id: Mapped[int] = mapped_column(Integer, ForeignKey("product_presentation.id"), nullable=False)
-    conversion_factor: Mapped[float] = mapped_column(Float, nullable=False)
+    source_lot_detail_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("lot_detail.id"), nullable=False)
+    target_presentation_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("product_presentation.id"), nullable=False)
+    converted_quantity: Mapped[int] = mapped_column(Integer, nullable=False)  # Coincide con DB: integer
+    remaining_bulk: Mapped[int] = mapped_column(Integer, nullable=False)  # Coincide con DB: integer
+    conversion_date: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=func.now())
+    status: Mapped[str] = mapped_column(String, nullable=False, default="ACTIVE")  # ACTIVE, COMPLETED, CANCELLED
+    created_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=func.now())
+    # Nota: updated_at no existe en la tabla actual de la DB
+    
+    # Relaciones
+    lot_detail: Mapped["LotDetail"] = relationship("LotDetail")
+    target_presentation: Mapped["ProductPresentation"] = relationship("ProductPresentation")
 
 
 # MODELOS DE VENTA

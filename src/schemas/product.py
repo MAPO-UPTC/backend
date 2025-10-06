@@ -23,9 +23,22 @@ class ProductCreate(BaseModel):
 
 # Esquema para apertura de bulto y habilitar venta a granel
 class BulkConversionCreate(BaseModel):
-    source_lot_detail_id: int
-    target_presentation_id: int  # id de la presentación "granel"
-    quantity: float
+    source_lot_detail_id: uuid.UUID
+    target_presentation_id: uuid.UUID  # id de la presentación "granel"
+    quantity: int  # Cambiar a int para coincidir con DB
+
+
+class BulkConversionResponse(BaseModel):
+    id: uuid.UUID
+    source_lot_detail_id: uuid.UUID
+    target_presentation_id: uuid.UUID
+    converted_quantity: int  # Cambiar a int para coincidir con DB
+    remaining_bulk: int      # Cambiar a int para coincidir con DB
+    conversion_date: str
+    status: str
+    
+    class Config:
+        from_attributes = True
 
 
 class ProductUpdate(BaseModel):

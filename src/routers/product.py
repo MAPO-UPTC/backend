@@ -175,10 +175,10 @@ async def get_bulk_stock():
         bulks = session.query(BulkConversion).filter(BulkConversion.status == "ACTIVE").all()
         return [
             {
-                "bulk_conversion_id": bulk.id,
+                "bulk_conversion_id": str(bulk.id),
                 "remaining_bulk": bulk.remaining_bulk,
                 "converted_quantity": bulk.converted_quantity,
-                "target_presentation_id": bulk.target_presentation_id,
+                "target_presentation_id": str(bulk.target_presentation_id),
                 "conversion_date": str(bulk.conversion_date),
                 "status": bulk.status
             }
@@ -186,11 +186,11 @@ async def get_bulk_stock():
         ]
 @router.post("/sell-bulk/", response_model=dict)
 async def sell_bulk(
-    bulk_conversion_id: int = Body(...),
-    quantity: float = Body(...),
+    bulk_conversion_id: uuid.UUID = Body(...),
+    quantity: int = Body(...),
     unit_price: float = Body(...),
-    customer_id: int = Body(...),
-    user_id: int = Body(...),
+    customer_id: uuid.UUID = Body(...),
+    user_id: uuid.UUID = Body(...),
     current_user=Depends(require_permission(Entity.PRODUCTS, Action.UPDATE)),
 ):
     """
