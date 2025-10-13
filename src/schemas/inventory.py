@@ -33,6 +33,36 @@ class LotDetailResponse(BaseModel):
         from_attributes = True
 
 
+class LotDetailExtendedResponse(BaseModel):
+    """
+    Schema extendido para respuesta de detalles de lote.
+    Incluye información del lote, producto y presentación.
+    """
+    # Información del LotDetail
+    id: uuid.UUID
+    lot_id: uuid.UUID
+    presentation_id: uuid.UUID
+    quantity_received: int
+    quantity_available: int
+    unit_cost: float
+    batch_number: Optional[str] = None
+    
+    # Información del Lote
+    lot_code: str
+    received_date: datetime
+    expiry_date: Optional[datetime] = None
+    lot_status: str
+    
+    # Información del Producto y Presentación
+    product_id: uuid.UUID
+    product_name: str
+    presentation_name: str
+    presentation_unit: str
+    
+    class Config:
+        from_attributes = True
+
+
 class LotCreate(BaseModel):
     """Schema para crear un nuevo lote de compra"""
     lot_code: str

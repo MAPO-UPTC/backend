@@ -23,9 +23,10 @@ class ProductCreate(BaseModel):
 
 # Esquema para apertura de bulto y habilitar venta a granel
 class BulkConversionCreate(BaseModel):
-    source_lot_detail_id: uuid.UUID
-    target_presentation_id: uuid.UUID  # id de la presentación "granel"
-    quantity: int  # Cambiar a int para coincidir con DB
+    source_lot_detail_id: uuid.UUID       # ID del lot_detail del bulto empaquetado
+    target_presentation_id: uuid.UUID     # ID de la presentación "granel"
+    converted_quantity: int               # Cantidad de bultos a abrir (ej: 1)
+    unit_conversion_factor: int           # Cantidad que contiene cada bulto (ej: 25kg)
 
 
 class BulkConversionResponse(BaseModel):

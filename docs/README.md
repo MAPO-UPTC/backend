@@ -1,8 +1,43 @@
 # MAPO Backend API
 
-✅ **Estado: FUNCIONAL** - Backend completamente refactorizado con nueva arquitectura
+✅ **Estado: FUNCIONAL** - Backend completamente refactorizado con nueva arquitec#### 📦 Gestión de Inventario
+- **[LOT_DETAILS_ENDPOINT_GUIDE.md](./LOT_DETAILS_ENDPOINT_GUIDE.md)** - 📊 **Detalles de Lotes por Presentación**
+  - Endpoint `GET /inventory/presentations/{presentation_id}/lot-details`
+  - Lista completa de lotes con ordenamiento FIFO automático
+  - Información de producto, presentación y fechas en una sola llamada
+  - Hook `useLotDetails` y componente `LotDetailsTable`
+  - **Esencial para conversión a granel** - obtener lote más antiguo
+  - Casos de uso: distribución de stock, alertas de vencimiento, trazabilidad
+  - Interfaces TypeScript completas
+  - Validaciones y manejo de errores
 
-## 🎯 Resumen del Proyecto
+- **[LOT_DETAILS_SUMMARY.md](./LOT_DETAILS_SUMMARY.md)** - 📋 **Resumen Ejecutivo**
+  - Problema resuelto y solución implementada
+  - Flujo de conversión a granel completo
+  - Comparación con endpoint anterior
+  - Arquitectura de base de datos (joins)
+
+- **[LOT_DETAILS_QUICK_REFERENCE.md](./LOT_DETAILS_QUICK_REFERENCE.md)** - 🚀 **Referencia Rápida**
+  - Tarjeta de referencia de una página
+  - Ejemplo de uso básico
+  - Errores comunes y soluciones
+  - Puntos clave del endpoint
+
+- **[BULK_CONVERSION_GUIDE.md](./BULK_CONVERSION_GUIDE.md)** - 📦➡️🌾 **Convertir Empaquetado a Granel**
+  - Endpoint `POST /products/open-bulk/`
+  - Cómo abrir bultos/paquetes para venta a granel
+  - Hook `useBulkConversion` completo
+  - Componente modal con React/TypeScript
+  - Consultar stock a granel activo
+  - Validaciones y manejo de errores
+  - Casos de uso prácticos
+
+- **[BULK_CONVERSION_DIAGRAM.md](./BULK_CONVERSION_DIAGRAM.md)** - 📊 **Diagramas Visuales**
+  - Flujo visual del proceso completo
+  - Diagrama de estados de conversión
+  - Sistema FIFO explicado con ejemplos
+  - Wireframes de interfaz
+  - Casos de uso ilustrados# 🎯 Resumen del Proyecto
 
 Backend API para MAPO desarrollado con FastAPI, PostgreSQL y Firebase Auth. 
 Arquitectura modular y normalizada lista para producción.
@@ -100,7 +135,17 @@ role + user_role (sistema de roles)
   - Componente SaleConfirmation
   - FAQ y casos de uso
 
-#### 🔧 Solución de Problemas
+#### � Gestión de Inventario
+- **[BULK_CONVERSION_GUIDE.md](./BULK_CONVERSION_GUIDE.md)** - 📦➡️🌾 **Convertir Empaquetado a Granel**
+  - Endpoint `POST /products/open-bulk/`
+  - Cómo abrir bultos/paquetes para venta a granel
+  - Hook `useBulkConversion` completo
+  - Componente modal con React/TypeScript
+  - Consultar stock a granel activo
+  - Validaciones y manejo de errores
+  - Casos de uso prácticos
+
+#### �🔧 Solución de Problemas
 - **[FIX_AUTH_ERROR_401.md](./FIX_AUTH_ERROR_401.md)** - ⚠️ **ERROR 401: Authentication required**
   - Solución completa para error de autenticación
   - 5 opciones según tu cliente API (Fetch, Axios, etc.)

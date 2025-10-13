@@ -110,6 +110,38 @@ def get_available_stock_by_presentation(db: Session, presentation_id: str) -> in
     return result or 0
 
 
+def get_lot_details_by_presentation(db: Session, presentation_id: str, available_only: bool = True) -> List[LotDetail]:
+    """
+    Obtener todos los detalles de lotes para una presentación específica.
+    Ordenados por fecha de recepción (FIFO - First In, First Out).
+    
+    Args:
+        db: Sesión de base de datos
+        presentation_id: UUID de la presentación
+        available_only: Si True, solo retorna lotes con quantity_available > 0
+    
+    Returns:
+        Lista de LotDetail ordenados por FIFO (más antiguo primero)
+    """
+    # JOIN explícito con condición ON para evitar ambigüedad
+    query = db.query(LotDetail).join(
+        Lot, 
+        LotDetail.lot_id == Lot.id
+    ).filter(
+        LotDetail.presentation_id == presentation_id
+    )
+    
+    # Filtrar solo lotes con stock disponible si se solicita
+    if available_only:
+        query = query.filter(LotDetail.quantity_available > 0)
+    
+    # Ordenar por fecha de recepción (FIFO) - más antiguo primero
+    # Cualificar explícitamente las columnas para evitar ambigüedad
+    lot_details = query.order_by(Lot.received_date.asc(), LotDetail.id.asc()).all()
+    
+    return lot_details
+
+
 def reduce_stock(db: Session, presentation_id: str, quantity: int) -> bool:
     """
     Reducir stock de una presentación usando FIFO (First In, First Out)
@@ -122,10 +154,14 @@ def reduce_stock(db: Session, presentation_id: str, quantity: int) -> bool:
         return False
     
     # Obtener detalles ordenados por fecha de compra (FIFO)
-    lot_details = db.query(LotDetail).join(Lot).filter(
+    # JOIN explícito con condición ON para evitar ambigüedad
+    lot_details = db.query(LotDetail).join(
+        Lot,
+        LotDetail.lot_id == Lot.id
+    ).filter(
         LotDetail.presentation_id == presentation_id,
         LotDetail.quantity_available > 0
-    ).order_by(Lot.received_date).all()
+    ).order_by(Lot.received_date.asc()).all()
     
     remaining_to_reduce = quantity
     

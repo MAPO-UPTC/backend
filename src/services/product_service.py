@@ -57,37 +57,57 @@ from datetime import datetime
 def open_bulk_conversion_service(data: BulkConversionCreate):
     """
     Servicio para abrir un bulto y habilitar venta a granel.
+    
+    Ejemplo: Si tienes 1 bulto de 25kg y quieres abrirlo:
+    - converted_quantity = 1 (abres 1 bulto)
+    - unit_conversion_factor = 25 (cada bulto contiene 25kg)
+    - Resultado: Se crean 25kg a granel
     """
     with Session(engine) as session:
         # Buscar el detalle de lote
         lot_detail = session.execute(
             select(LotDetail).where(LotDetail.id == data.source_lot_detail_id)
         ).scalar_one_or_none()
+        
         if not lot_detail:
             raise HTTPException(status_code=404, detail="LotDetail not found")
-        # Validar que hay bultos disponibles
-        if lot_detail.quantity_available < 1:
-            raise HTTPException(status_code=400, detail="No hay bultos disponibles para abrir")
-        # Restar 1 bulto
-        lot_detail.quantity_available -= 1
+        
+        # Validar que hay suficientes bultos disponibles
+        if lot_detail.quantity_available < data.converted_quantity:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"No hay suficientes bultos disponibles. Disponibles: {lot_detail.quantity_available}, Solicitados: {data.converted_quantity}"
+            )
+        
+        # Calcular cantidad total a granel
+        # Si abres 1 bulto de 25kg = 25kg
+        # Si abres 2 bultos de 25kg = 50kg
+        total_bulk_quantity = data.converted_quantity * data.unit_conversion_factor
+        
+        # Restar los bultos convertidos
+        lot_detail.quantity_available -= data.converted_quantity
         session.add(lot_detail)
+        
         # Crear conversión a granel
         bulk = BulkConversion(
             source_lot_detail_id=data.source_lot_detail_id,
             target_presentation_id=data.target_presentation_id,
-            converted_quantity=data.quantity,
-            remaining_bulk=data.quantity,
+            converted_quantity=data.converted_quantity,           # Cantidad de bultos abiertos
+            remaining_bulk=total_bulk_quantity,                   # Cantidad total a granel disponible
             conversion_date=datetime.now(),
             status="ACTIVE"
         )
         session.add(bulk)
         session.commit()
         session.refresh(bulk)
+        
         return {
-            "message": "Bulto abierto exitosamente",
+            "message": f"Bulto(s) abierto(s) exitosamente. {total_bulk_quantity} unidades disponibles a granel",
             "bulk_conversion_id": str(bulk.id),
-            "converted_quantity": bulk.converted_quantity,
-            "remaining_bulk": bulk.remaining_bulk,
+            "converted_quantity": bulk.converted_quantity,        # Bultos convertidos
+            "remaining_bulk": bulk.remaining_bulk,                # Cantidad a granel disponible
+            "total_bulk_created": total_bulk_quantity,            # Total creado a granel
+            "unit_conversion_factor": data.unit_conversion_factor,
             "status": bulk.status
         }
 import uuid
