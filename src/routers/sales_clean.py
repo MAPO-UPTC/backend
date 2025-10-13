@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from utils.auth import get_current_user_from_db
-from schemas.sales import SimpleSaleCreate, SaleResponse, SalesReportFilter
+from schemas.sales import SimpleSaleCreate, SaleResponse, SalesReportFilter, SaleDetailFullResponse
 from services.sales_service import (
     create_sale,
     get_sales,
@@ -17,7 +17,8 @@ from services.sales_service import (
     get_sale_details_by_sale,
     get_sales_report,
     get_best_selling_products,
-    get_daily_sales_summary
+    get_daily_sales_summary,
+    get_sale_full_details
 )
 
 router = APIRouter(
@@ -107,6 +108,72 @@ async def get_sales_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error obteniendo ventas: {str(e)}"
+        )
+
+
+@router.get("/{sale_id}/details", response_model=SaleDetailFullResponse)
+async def get_sale_full_details_endpoint(
+    sale_id: str,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user_from_db)
+):
+    """
+    Obtener detalles completos de una venta específica.
+    
+    Incluye:
+    - Información completa de la venta
+    - Información del cliente (nombre, documento)
+    - Información del vendedor
+    - Detalles de cada item con:
+      - Nombre del producto
+      - Nombre de la presentación
+      - Precio de costo
+      - Cantidad y precio de venta
+      - Total por línea
+    
+    Parámetros:
+    - **sale_id**: UUID de la venta
+    
+    Ejemplo de respuesta:
+    ```json
+    {
+      "id": "uuid-venta",
+      "sale_code": "VEN-20251012120000",
+      "sale_date": "2025-10-12T12:00:00",
+      "customer_name": "Juan Pérez",
+      "customer_document": "CC: 1234567890",
+      "seller_name": "María García",
+      "total": 45.50,
+      "status": "completed",
+      "items": [
+        {
+          "product_name": "Arroz Diana",
+          "presentation_name": "Paquete x 500g",
+          "quantity": 2,
+          "unit_price": 12.50,
+          "cost_price": 8.00,
+          "line_total": 25.00
+        }
+      ]
+    }
+    ```
+    """
+    try:
+        sale_details = get_sale_full_details(db, sale_id)
+        
+        if not sale_details:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Venta con ID {sale_id} no encontrada"
+            )
+        
+        return sale_details
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error obteniendo detalles de venta: {str(e)}"
         )
 
 

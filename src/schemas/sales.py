@@ -41,6 +41,28 @@ class SaleDetailResponse(BaseModel):
         from_attributes = True
 
 
+class SaleDetailExtended(BaseModel):
+    """
+    Detalle de venta extendido con información del producto
+    """
+    id: uuid.UUID
+    sale_id: uuid.UUID
+    presentation_id: uuid.UUID
+    lot_detail_id: Optional[uuid.UUID] = None
+    bulk_conversion_id: Optional[uuid.UUID] = None
+    quantity: int
+    unit_price: float
+    line_total: float
+    
+    # Información del producto
+    product_name: str = Field(..., description="Nombre del producto")
+    presentation_name: str = Field(..., description="Nombre de la presentación")
+    cost_price: float = Field(..., description="Precio de costo del producto")
+    
+    class Config:
+        from_attributes = True
+
+
 class SaleResponse(BaseModel):
     id: uuid.UUID
     sale_code: str
@@ -50,6 +72,32 @@ class SaleResponse(BaseModel):
     total: float
     status: str
     items: List[SaleDetailResponse] = Field(default=[])
+    
+    class Config:
+        from_attributes = True
+
+
+class SaleDetailFullResponse(BaseModel):
+    """
+    Respuesta completa de una venta con detalles extendidos de productos
+    """
+    id: uuid.UUID
+    sale_code: str
+    sale_date: datetime
+    customer_id: uuid.UUID
+    user_id: uuid.UUID
+    total: float
+    status: str
+    
+    # Información del cliente
+    customer_name: str = Field(..., description="Nombre completo del cliente")
+    customer_document: str = Field(..., description="Documento del cliente")
+    
+    # Información del vendedor
+    seller_name: str = Field(..., description="Nombre del vendedor")
+    
+    # Items con información extendida
+    items: List[SaleDetailExtended] = Field(default=[], description="Detalles de la venta con info de productos")
     
     class Config:
         from_attributes = True

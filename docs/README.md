@@ -79,6 +79,20 @@ role + user_role (sistema de roles)
   - Componentes con selector de fechas
   - Ejemplos de filtros predefinidos (hoy, semana, mes)
 
+- **[SALE_DETAILS_ENDPOINT_GUIDE.md](./SALE_DETAILS_ENDPOINT_GUIDE.md)** - 📋 **Detalles de Venta Individual**
+  - Endpoint `GET /sales/{sale_id}/details`
+  - Información completa de la venta con nombres de productos
+  - Precio de costo y cálculo de rentabilidad
+  - Datos del cliente y vendedor
+  - Modal de detalles con React/TypeScript
+  - Funcionalidad de impresión
+
+- **[TEST_SALE_DETAILS.md](./TEST_SALE_DETAILS.md)** - 🧪 **Prueba Rápida del Endpoint**
+  - Cómo probar el endpoint paso a paso
+  - Ejemplos con Swagger, PowerShell, cURL y JavaScript
+  - Verificación de respuesta correcta
+  - Cálculos de rentabilidad de ejemplo
+
 #### 🔀 Ventas Mixtas
 - **[MIXED_SALES_GUIDE.md](./MIXED_SALES_GUIDE.md)** - Ventas Mixtas (Empaquetado + Granel)
   - Sistema automático FIFO

@@ -6,7 +6,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from src.models_db import Sale, SaleDetail, ProductPresentation, Person, User, LotDetail, BulkConversion
+from src.models_db import Sale, SaleDetail, ProductPresentation, Person, User, LotDetail, BulkConversion, Product
 from src.schemas.sales import SimpleSaleCreate, SalesReportFilter
 from src.services import inventory_service
 
@@ -410,4 +410,86 @@ def get_daily_sales_summary(db: Session, date: datetime) -> dict:
         "total_revenue": total_revenue,
         "total_items_sold": total_items,
         "average_sale_value": total_revenue / total_sales if total_sales > 0 else 0
+    }
+
+
+def get_sale_full_details(db: Session, sale_id: str) -> dict:
+    """
+    Obtener detalles completos de una venta incluyendo:
+    - Información de la venta
+    - Información del cliente
+    - Información del vendedor
+    - Detalles de items con nombre del producto y precio de costo
+    
+    Returns:
+        dict con toda la información de la venta o None si no existe
+    """
+    # Obtener la venta con relaciones
+    sale = db.query(Sale)\
+        .filter(Sale.id == sale_id)\
+        .first()
+    
+    if not sale:
+        return None
+    
+    # Obtener información del cliente
+    customer = db.query(Person)\
+        .filter(Person.id == sale.customer_id)\
+        .first()
+    
+    # Obtener información del vendedor
+    seller_user = db.query(User)\
+        .filter(User.id == sale.user_id)\
+        .first()
+    
+    seller_person = db.query(Person)\
+        .filter(Person.id == seller_user.person_id)\
+        .first() if seller_user else None
+    
+    # Obtener detalles de la venta con información de productos
+    sale_details = db.query(
+        SaleDetail,
+        Product.name.label('product_name'),
+        ProductPresentation.presentation_name,
+        LotDetail.unit_cost.label('cost_price')
+    ).join(
+        ProductPresentation, SaleDetail.presentation_id == ProductPresentation.id
+    ).join(
+        Product, ProductPresentation.product_id == Product.id
+    ).outerjoin(
+        LotDetail, SaleDetail.lot_detail_id == LotDetail.id
+    ).filter(
+        SaleDetail.sale_id == sale_id
+    ).all()
+    
+    # Construir respuesta con items extendidos
+    items_extended = []
+    for detail, product_name, presentation_name, cost_price in sale_details:
+        items_extended.append({
+            "id": detail.id,
+            "sale_id": detail.sale_id,
+            "presentation_id": detail.presentation_id,
+            "lot_detail_id": detail.lot_detail_id,
+            "bulk_conversion_id": detail.bulk_conversion_id,
+            "quantity": detail.quantity,
+            "unit_price": detail.unit_price,
+            "line_total": detail.line_total,
+            "product_name": product_name,
+            "presentation_name": presentation_name,
+            "cost_price": cost_price or 0.0  # Si es granel podría no tener cost_price directo
+        })
+    
+    # Construir respuesta completa
+    return {
+        "id": sale.id,
+        "sale_code": sale.sale_code,
+        "sale_date": sale.sale_date,
+        "customer_id": sale.customer_id,
+        "user_id": sale.user_id,
+        "total": sale.total,
+        "status": sale.status,
+        "customer_name": f"{customer.name} {customer.last_name}" if customer else "Cliente desconocido",
+        "customer_document": f"{customer.document_type}: {customer.document_number}" if customer else "N/A",
+        "seller_name": f"{seller_person.name} {seller_person.last_name}" if seller_person else "Vendedor desconocido",
+        "items": items_extended
     }
