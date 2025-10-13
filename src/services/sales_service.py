@@ -196,13 +196,41 @@ def get_sale_by_code(db: Session, sale_code: str) -> Optional[Sale]:
     return db.query(Sale).filter(Sale.sale_code == sale_code).first()
 
 
-def get_sales(db: Session, skip: int = 0, limit: int = 100) -> List[Sale]:
+def get_sales(
+    db: Session, 
+    skip: int = 0, 
+    limit: int = 100,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None
+) -> List[Sale]:
     """
-    Obtener lista de ventas con paginación y relaciones
+    Obtener lista de ventas con paginación, filtros opcionales por fecha
+    y ordenamiento descendente (más recientes primero).
+    
+    Args:
+        db: Sesión de base de datos
+        skip: Número de registros a saltar (paginación)
+        limit: Cantidad máxima de resultados
+        start_date: Fecha de inicio (opcional) - filtra ventas >= a esta fecha
+        end_date: Fecha de fin (opcional) - filtra ventas <= a esta fecha
+    
+    Returns:
+        Lista de ventas ordenadas de más reciente a más antigua
     """
-    return db.query(Sale)\
+    query = db.query(Sale)\
         .join(Person, Sale.customer_id == Person.id)\
-        .join(User, Sale.user_id == User.id)\
+        .join(User, Sale.user_id == User.id)
+    
+    # Aplicar filtros de fecha si se proporcionan
+    if start_date:
+        query = query.filter(Sale.sale_date >= start_date)
+    
+    if end_date:
+        query = query.filter(Sale.sale_date <= end_date)
+    
+    # Ordenar de más reciente a más antigua
+    return query\
+        .order_by(Sale.sale_date.desc())\
         .offset(skip)\
         .limit(limit)\
         .all()

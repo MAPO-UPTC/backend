@@ -195,6 +195,9 @@ class Sale(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("user.id"), nullable=False)
     total: Mapped[float] = mapped_column(Float, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False)
+    
+    # Relación con SaleDetail
+    items: Mapped[list["SaleDetail"]] = relationship("SaleDetail", back_populates="sale", lazy="joined")
 
 
 class SaleDetail(Base):
@@ -207,3 +210,6 @@ class SaleDetail(Base):
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     unit_price: Mapped[float] = mapped_column(Float, nullable=False)
     line_total: Mapped[float] = mapped_column(Float, nullable=False)
+    
+    # Relación con Sale
+    sale: Mapped["Sale"] = relationship("Sale", back_populates="items")

@@ -72,6 +72,13 @@ role + user_role (sistema de roles)
   - Manejo de errores y validaciones
   - Dashboard de ventas completo
 
+- **[SALES_HISTORY_GUIDE.md](./SALES_HISTORY_GUIDE.md)** - 📊 **Historial de Ventas**
+  - Filtros por fecha (opcionales)
+  - Paginación y ordenamiento automático
+  - Hook `useSalesHistory` completo
+  - Componentes con selector de fechas
+  - Ejemplos de filtros predefinidos (hoy, semana, mes)
+
 #### 🔀 Ventas Mixtas
 - **[MIXED_SALES_GUIDE.md](./MIXED_SALES_GUIDE.md)** - Ventas Mixtas (Empaquetado + Granel)
   - Sistema automático FIFO
@@ -86,6 +93,12 @@ role + user_role (sistema de roles)
   - Código corregido listo para usar
   - Diagnóstico paso a paso
   - Checklist de verificación
+
+- **[FIX_SALES_ITEMS.md](./FIX_SALES_ITEMS.md)** - 🔧 **Items vacíos en historial de ventas**
+  - Corrección de relación Sale ↔ SaleDetail
+  - Carga automática de items con lazy="joined"
+  - Ejemplos de uso en frontend
+  - Verificación post-corrección
 
 ---
 

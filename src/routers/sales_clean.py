@@ -2,7 +2,7 @@
 Router para manejo de ventas - Versión simplificada
 """
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
@@ -71,16 +71,37 @@ async def create_sale_endpoint(
 
 @router.get("/", response_model=List[SaleResponse])
 async def get_sales_endpoint(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
+    skip: int = Query(0, ge=0, description="Número de registros a saltar"),
+    limit: int = Query(100, ge=1, le=1000, description="Cantidad máxima de resultados"),
+    start_date: Optional[datetime] = Query(None, description="Fecha de inicio (opcional) - formato ISO 8601"),
+    end_date: Optional[datetime] = Query(None, description="Fecha de fin (opcional) - formato ISO 8601"),
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user_from_db)
 ):
     """
-    Obtener lista de ventas con paginación
+    Obtener lista de ventas con paginación y filtros opcionales.
+    
+    - **skip**: Número de registros a saltar para paginación (default: 0)
+    - **limit**: Cantidad máxima de resultados (default: 100, max: 1000)
+    - **start_date**: Filtrar ventas desde esta fecha (opcional, formato: 2025-10-01T00:00:00)
+    - **end_date**: Filtrar ventas hasta esta fecha (opcional, formato: 2025-10-31T23:59:59)
+    
+    Las ventas se devuelven ordenadas de más reciente a más antigua.
+    
+    Ejemplos:
+    - Todas las ventas: `/sales/`
+    - Ventas de octubre 2025: `/sales/?start_date=2025-10-01T00:00:00&end_date=2025-10-31T23:59:59`
+    - Últimas 50 ventas: `/sales/?limit=50`
+    - Página 2 (50 siguientes): `/sales/?skip=50&limit=50`
     """
     try:
-        sales = get_sales(db, skip=skip, limit=limit)
+        sales = get_sales(
+            db, 
+            skip=skip, 
+            limit=limit,
+            start_date=start_date,
+            end_date=end_date
+        )
         return sales
     except Exception as e:
         raise HTTPException(
