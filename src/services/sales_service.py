@@ -6,7 +6,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from src.models_db import Sale, SaleDetail, ProductPresentation, Person, User, LotDetail
+from src.models_db import Sale, SaleDetail, ProductPresentation, Person, User, LotDetail, BulkConversion
 from src.schemas.sales import SimpleSaleCreate, SalesReportFilter
 from src.services import inventory_service
 
@@ -19,9 +19,24 @@ def generate_sale_code() -> str:
     return f"VEN-{timestamp}"
 
 
+def get_available_bulk_stock(db: Session, presentation_id: str) -> float:
+    """
+    Obtener el stock a granel disponible para una presentación
+    """
+    result = db.query(
+        func.sum(BulkConversion.remaining_bulk)
+    ).filter(
+        BulkConversion.target_presentation_id == presentation_id,
+        BulkConversion.status == "ACTIVE"
+    ).scalar()
+    
+    return float(result or 0)
+
+
 def create_sale(db: Session, sale_data: dict, user_id: str) -> Sale:
     """
-    Crear una nueva venta con lógica inteligente para campos automáticos
+    Crear una nueva venta con lógica inteligente para campos automáticos.
+    Soporta ventas mixtas (empaquetado + granel) en una sola transacción.
     """
     try:
         # Validar que el usuario existe
@@ -34,15 +49,27 @@ def create_sale(db: Session, sale_data: dict, user_id: str) -> Sale:
         if not customer:
             raise ValueError(f"Cliente con ID {sale_data['customer_id']} no encontrado")
         
-        # Verificar stock para todos los items
+        # Verificar stock para todos los items (empaquetado + granel)
         for item in sale_data["items"]:
-            available_stock = inventory_service.get_available_stock_by_presentation(
+            presentation = db.query(ProductPresentation).filter(
+                ProductPresentation.id == item["presentation_id"]
+            ).first()
+            
+            if not presentation:
+                raise ValueError(f"Presentación {item['presentation_id']} no encontrada")
+            
+            # Calcular stock total disponible (empaquetado + granel)
+            packaged_stock = inventory_service.get_available_stock_by_presentation(
                 db, str(item["presentation_id"])
             )
-            if available_stock < item["quantity"]:
+            bulk_stock = get_available_bulk_stock(db, str(item["presentation_id"]))
+            total_available = packaged_stock + bulk_stock
+            
+            if total_available < item["quantity"]:
                 raise ValueError(
-                    f"Stock insuficiente para presentación {item['presentation_id']}. "
-                    f"Disponible: {available_stock}, Solicitado: {item['quantity']}"
+                    f"Stock insuficiente para {presentation.presentation_name}. "
+                    f"Disponible: {total_available} (Empaquetado: {packaged_stock}, Granel: {bulk_stock}), "
+                    f"Solicitado: {item['quantity']}"
                 )
         
         # Crear la venta principal
@@ -59,34 +86,89 @@ def create_sale(db: Session, sale_data: dict, user_id: str) -> Sale:
         
         total_sale = 0.0
         
-        # Crear los detalles de venta con lógica automática
+        # Crear los detalles de venta con lógica automática (empaquetado o granel)
         for item in sale_data["items"]:
-            # Obtener el primer lot_detail disponible (FIFO)
-            lot_detail = db.query(LotDetail).filter(
+            remaining_quantity = item["quantity"]
+            
+            # ESTRATEGIA: Intentar primero con stock empaquetado (FIFO), luego granel
+            
+            # 1. Intentar vender de stock empaquetado
+            lot_details = db.query(LotDetail).filter(
                 LotDetail.presentation_id == item["presentation_id"],
-                LotDetail.quantity_available >= item["quantity"]
-            ).order_by(LotDetail.id).first()
+                LotDetail.quantity_available > 0
+            ).order_by(LotDetail.id).all()
             
-            if not lot_detail:
-                raise ValueError(f"No hay lote disponible para la cantidad solicitada de {item['presentation_id']}")
+            for lot_detail in lot_details:
+                if remaining_quantity <= 0:
+                    break
+                
+                # Calcular cuánto se puede vender de este lote
+                quantity_from_lot = min(lot_detail.quantity_available, remaining_quantity)
+                
+                line_total = quantity_from_lot * item["unit_price"]
+                
+                # Crear detalle de venta (empaquetado)
+                db_sale_detail = SaleDetail(
+                    sale_id=db_sale.id,
+                    presentation_id=item["presentation_id"],
+                    lot_detail_id=lot_detail.id,
+                    bulk_conversion_id=None,
+                    quantity=quantity_from_lot,
+                    unit_price=item["unit_price"],
+                    line_total=line_total
+                )
+                db.add(db_sale_detail)
+                total_sale += line_total
+                
+                # Reducir stock del lote
+                lot_detail.quantity_available -= quantity_from_lot
+                remaining_quantity -= quantity_from_lot
             
-            # Por ahora, bulk_conversion_id será None (se puede implementar después)
-            line_total = item["quantity"] * item["unit_price"]
+            # 2. Si aún queda cantidad por vender, usar stock a granel
+            if remaining_quantity > 0:
+                bulk_conversions = db.query(BulkConversion).filter(
+                    BulkConversion.target_presentation_id == item["presentation_id"],
+                    BulkConversion.status == "ACTIVE",
+                    BulkConversion.remaining_bulk > 0
+                ).order_by(BulkConversion.conversion_date).all()
+                
+                for bulk_conv in bulk_conversions:
+                    if remaining_quantity <= 0:
+                        break
+                    
+                    # Calcular cuánto se puede vender de esta conversión
+                    quantity_from_bulk = min(bulk_conv.remaining_bulk, remaining_quantity)
+                    
+                    line_total = quantity_from_bulk * item["unit_price"]
+                    
+                    # Crear detalle de venta (granel)
+                    db_sale_detail = SaleDetail(
+                        sale_id=db_sale.id,
+                        presentation_id=item["presentation_id"],
+                        lot_detail_id=None,
+                        bulk_conversion_id=bulk_conv.id,
+                        quantity=quantity_from_bulk,
+                        unit_price=item["unit_price"],
+                        line_total=line_total
+                    )
+                    db.add(db_sale_detail)
+                    total_sale += line_total
+                    
+                    # Reducir stock a granel
+                    bulk_conv.remaining_bulk -= quantity_from_bulk
+                    
+                    # Marcar como COMPLETED si se agotó
+                    if bulk_conv.remaining_bulk <= 0:
+                        bulk_conv.status = "COMPLETED"
+                    
+                    remaining_quantity -= quantity_from_bulk
             
-            db_sale_detail = SaleDetail(
-                sale_id=db_sale.id,
-                presentation_id=item["presentation_id"],
-                lot_detail_id=lot_detail.id,
-                bulk_conversion_id=None,  # Funcionalidad futura
-                quantity=item["quantity"],
-                unit_price=item["unit_price"],
-                line_total=line_total
-            )
-            db.add(db_sale_detail)
-            total_sale += line_total
-            
-            # Reducir el stock del lote
-            lot_detail.quantity_available -= item["quantity"]
+            # Verificar que se pudo vender toda la cantidad
+            if remaining_quantity > 0:
+                raise ValueError(
+                    f"No se pudo completar la venta. Faltaron {remaining_quantity} unidades "
+                    f"de {item['presentation_id']}"
+                )
         
         # Actualizar el total de la venta
         db_sale.total = total_sale
@@ -169,7 +251,7 @@ def get_sale_details_by_sale(db: Session, sale_id: str) -> List[SaleDetail]:
 
 def cancel_sale(db: Session, sale_id: str) -> bool:
     """
-    Cancelar una venta y restaurar el inventario
+    Cancelar una venta y restaurar el inventario (empaquetado y granel)
     """
     try:
         # Obtener la venta y sus detalles
@@ -181,10 +263,24 @@ def cancel_sale(db: Session, sale_id: str) -> bool:
         
         # Restaurar el stock para cada item
         for detail in sale_details:
-            # Encontrar el lot_detail correspondiente y restaurar el stock
-            lot_detail = db.query(LotDetail).filter(LotDetail.id == detail.lot_detail_id).first()
-            if lot_detail:
-                lot_detail.quantity_available += detail.quantity
+            # Restaurar stock empaquetado
+            if detail.lot_detail_id:
+                lot_detail = db.query(LotDetail).filter(
+                    LotDetail.id == detail.lot_detail_id
+                ).first()
+                if lot_detail:
+                    lot_detail.quantity_available += detail.quantity
+            
+            # Restaurar stock a granel
+            if detail.bulk_conversion_id:
+                bulk_conv = db.query(BulkConversion).filter(
+                    BulkConversion.id == detail.bulk_conversion_id
+                ).first()
+                if bulk_conv:
+                    bulk_conv.remaining_bulk += detail.quantity
+                    # Reactivar si estaba completado
+                    if bulk_conv.status == "COMPLETED":
+                        bulk_conv.status = "ACTIVE"
         
         # Cambiar el status de la venta a cancelada
         sale.status = "cancelled"

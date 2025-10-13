@@ -46,3 +46,56 @@ role + user_role (sistema de roles)
 - `GET /users` - Listar usuarios (auth requerida)
 - `PUT /users/{id}` - Actualizar usuario
 - `GET /docs` - Documentación interactiva
+
+## 📚 Documentación Detallada
+
+### Sistema de Ventas
+
+#### 🚀 Inicio Rápido
+- **[SWAGGER_EXAMPLES.md](./SWAGGER_EXAMPLES.md)** - ⭐ **EJEMPLOS JSON PARA SWAGGER**
+  - JSONs listos para copiar y pegar
+  - Cómo obtener UUIDs reales de clientes y productos
+  - Ejemplos con cURL y PowerShell
+  - Checklist de validación pre-venta
+  
+- **[FRONTEND_QUICK_SALE_GUIDE.md](./FRONTEND_QUICK_SALE_GUIDE.md)** - Guía de Implementación Frontend
+  - Guía paso a paso para implementar ventas
+  - Código React/TypeScript completo
+  - Hook `useSales` personalizado
+  - Errores comunes y soluciones
+
+#### 📖 Documentación Completa
+- **[SALES_SYSTEM_COMPLETE_GUIDE.md](./SALES_SYSTEM_COMPLETE_GUIDE.md)** - Guía completa del sistema
+  - 8 endpoints documentados con ejemplos
+  - Componentes React listos para usar
+  - Servicios JavaScript/TypeScript
+  - Manejo de errores y validaciones
+  - Dashboard de ventas completo
+
+#### 🔀 Ventas Mixtas
+- **[MIXED_SALES_GUIDE.md](./MIXED_SALES_GUIDE.md)** - Ventas Mixtas (Empaquetado + Granel)
+  - Sistema automático FIFO
+  - Ejemplos prácticos de ventas mixtas
+  - Componente SaleConfirmation
+  - FAQ y casos de uso
+
+#### 🔧 Solución de Problemas
+- **[FIX_AUTH_ERROR_401.md](./FIX_AUTH_ERROR_401.md)** - ⚠️ **ERROR 401: Authentication required**
+  - Solución completa para error de autenticación
+  - 5 opciones según tu cliente API (Fetch, Axios, etc.)
+  - Código corregido listo para usar
+  - Diagnóstico paso a paso
+  - Checklist de verificación
+
+---
+
+### ⚠️ IMPORTANTE: Campo Correcto para Ventas
+
+```json
+{
+  "customer_id": "uuid-del-cliente",  // ✅ CORRECTO
+  "client_id": "..."                  // ❌ INCORRECTO
+}
+```
+
+**Usa `customer_id` en todas las peticiones de ventas.**
