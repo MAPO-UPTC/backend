@@ -30,7 +30,6 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copiar código de la aplicación
 COPY src/ ./src/
-COPY start_dev.py ./
 
 # Crear directorio de logs con permisos correctos
 RUN mkdir -p logs && chmod 755 logs
@@ -49,5 +48,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Establecer PYTHONPATH para encontrar módulos en src/
 ENV PYTHONPATH=/app
 
-# Comando por defecto
-CMD ["python", "start_dev.py"]
+# Comando por defecto - ejecutar uvicorn directamente
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
