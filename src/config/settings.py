@@ -62,7 +62,8 @@ class Settings:
     # CONFIGURACIÓN DE CORS
     # ====================================
     ALLOWED_ORIGINS: List[str] = os.getenv(
-        "ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
+        "CORS_ORIGINS",
+        os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
     ).split(",")
 
     # ====================================
