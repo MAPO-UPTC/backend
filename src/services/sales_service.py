@@ -8,7 +8,7 @@ from typing import List, Optional
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from src.models_db import (
+from models_db import (
     BulkConversion,
     LotDetail,
     Person,
@@ -18,8 +18,8 @@ from src.models_db import (
     SaleDetail,
     User,
 )
-from src.schemas.sales import SalesReportFilter
-from src.services import inventory_service
+from schemas.sales import SalesReportFilter
+from services import inventory_service
 
 
 def generate_sale_code() -> str:

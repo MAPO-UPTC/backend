@@ -8,8 +8,8 @@ from typing import List, Optional
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from src.models_db import Lot, LotDetail, ProductPresentation, Supplier
-from src.schemas.inventory import LotCreate, LotDetailCreate, SupplierCreate
+from models_db import Lot, LotDetail, ProductPresentation, Supplier
+from schemas.inventory import LotCreate, LotDetailCreate, SupplierCreate
 
 
 def create_lot(db: Session, lot: LotCreate) -> Lot:
