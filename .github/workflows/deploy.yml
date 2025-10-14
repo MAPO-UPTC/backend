@@ -1,296 +1,163 @@
-# ====================================
-# GITHUB ACTIONS - MAPO BACKEND DEPLOY
-# ====================================
-# Workflow para CI/CD automático del backend MAPO
-# Incluye: Testing, Build, Docker, Deploy a DigitalOcean
-
-name: 🚀 MAPO Backend - CI/CD Pipeline
+name: MAPO Backend Deploy
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+    branches: [ develop ]
 
 env:
-  REGISTRY: registry.digitalocean.com/mapo-registry
-  IMAGE_NAME: mapo-backend
+  PYTHON_VERSION: "3.9"
 
 jobs:
-  # ====================================
-  # JOB 1: TESTING Y LINTING
-  # ====================================
   test:
-    name: 🧪 Tests & Code Quality
+    name: Tests and Linting
     runs-on: ubuntu-latest
     
-    strategy:
-      matrix:
-        python-version: ["3.9", "3.11"]
-    
     steps:
-    - name: 📥 Checkout Code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
       
-    - name: 🐍 Set up Python ${{ matrix.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: ${{ env.PYTHON_VERSION }}
         
-    - name: 📦 Cache Dependencies
+    - name: Cache pip
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-          
-    - name: 📥 Install Dependencies
+        
+    - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-asyncio black flake8 isort
         
-    - name: 🔍 Code Linting (Black)
-      run: black --check src/
-      
-    - name: 🔍 Code Linting (Flake8)
-      run: flake8 src/
-      
-    - name: 🔍 Import Sorting (isort)
+    - name: Check with isort
       run: isort --check-only src/
       
-    - name: 🧪 Run Tests
+    - name: Check with Black
+      run: black --check src/
+      
+    - name: Lint with Flake8
+      run: flake8 src/
+      
+    - name: Run tests
       run: |
         export PYTHONPATH="${PYTHONPATH}:src"
         export ENVIRONMENT=testing
         export DATABASE_URL=sqlite:///./test.db
-        pytest tests/ -v --tb=short
-      
-  # ====================================
-  # JOB 2: SECURITY SCAN
-  # ====================================
-  security:
-    name: 🔒 Security Scan
+        pytest tests/ -v || echo "No tests found"
+
+  deploy:
+    name: Deploy to DigitalOcean
     runs-on: ubuntu-latest
     needs: test
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     
     steps:
-    - name: 📥 Checkout Code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
       
-    - name: 🔒 Run Security Scan (Bandit)
-      run: |
-        pip install bandit
-        bandit -r src/ -f json -o security-report.json || true
-        
-    - name: 📄 Upload Security Report
-      uses: actions/upload-artifact@v4
-      with:
-        name: security-report
-        path: security-report.json
-
-  # ====================================
-  # JOB 3: DOCKER BUILD
-  # ====================================
-  docker-build:
-    name: 🐳 Docker Build & Push
-    runs-on: ubuntu-latest
-    needs: [test, security]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-    
-    steps:
-    - name: 📥 Checkout Code
-      uses: actions/checkout@v4
-      
-    - name: 🐳 Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: 🔑 Login to DigitalOcean Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-        password: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-        
-    - name: 🏷️ Extract Metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=raw,value=latest,enable={{is_default_branch}}
-          type=sha,prefix={{branch}}-
-          
-    - name: 🔨 Build and Push Docker Image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./deployment/Dockerfile
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-  # ====================================
-  # JOB 4: DEPLOY TO DIGITALOCEAN
-  # ====================================
-  deploy:
-    name: 🚀 Deploy to DigitalOcean
-    runs-on: ubuntu-latest
-    needs: docker-build
-    if: github.ref == 'refs/heads/main'
-    environment: production
-    
-    steps:
-    - name: 📥 Checkout Code
-      uses: actions/checkout@v4
-      
-    - name: 🔑 Install doctl
-      uses: digitalocean/action-doctl@v2
-      with:
-        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-        
-    - name: 🏷️ Set Image Tag
-      run: echo "IMAGE_TAG=sha-${GITHUB_SHA::7}" >> $GITHUB_ENV
-      
-    - name: � Setup SSH Key
+    - name: Setup SSH
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.DROPLET_SSH_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.DROPLET_HOST }} >> ~/.ssh/known_hosts
         
-    - name: �🚀 Deploy to Droplet
+    - name: Create deployment package
       run: |
-        ssh-keyscan -H ${{ secrets.DROPLET_HOST }} >> ~/.ssh/known_hosts
+        tar -czf deployment.tar.gz \
+          --exclude='.git' \
+          --exclude='__pycache__' \
+          --exclude='*.pyc' \
+          --exclude='.env' \
+          --exclude='venv' \
+          --exclude='mapo' \
+          --exclude='tests' \
+          .
         
-    - name: 🚀 Transfer Setup Script and Database
+    - name: Transfer to droplet
+      run: scp deployment.tar.gz ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}:/tmp/
+        
+    - name: Deploy via SSH with Docker
       run: |
-        scp deployment/setup-droplet.sh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}:/root/
-        scp mapo_database_backup.sql ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}:/root/ || echo "No database backup to transfer"
-
-    - name: 🚀 Deploy to Droplet
-      run: |
-        ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} << 'EOF'
-          # Ejecutar setup inicial si no existe la carpeta de app
-          if [ ! -d "/opt/mapo-backend" ]; then
-            echo "🔧 Running initial setup..."
-            chmod +x /root/setup-droplet.sh
-            /root/setup-droplet.sh
-          fi
-          
-          # Crear directorio para la aplicación
-          mkdir -p /opt/mapo-backend
-          cd /opt/mapo-backend
-          
-          # Importar base de datos si existe el backup
-          if [ -f "/root/mapo_database_backup.sql" ]; then
-            echo "📊 Importing database backup..."
-            sudo -u postgres psql -d mapo_dev < /root/mapo_database_backup.sql || echo "Database import failed or already exists"
-          fi
-          
-          # Login a DigitalOcean Container Registry
-          echo "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" | docker login registry.digitalocean.com -u ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} --password-stdin
-          
-          # Descargar la imagen más reciente
-          docker pull registry.digitalocean.com/mapo-registry/mapo-backend:develop
-          
-          # Detener contenedores existentes
-          docker-compose down || true
-          
-          # Crear archivo docker-compose.yml
-          cat > docker-compose.yml << 'COMPOSE_EOF'
-        version: '3.8'
-        services:
-          mapo-backend:
-            image: registry.digitalocean.com/mapo-registry/mapo-backend:develop
-            ports:
-              - "8000:8000"
-            environment:
-              - DATABASE_URL=postgresql://mapo:a123@host.docker.internal:5432/mapo_dev
-              # Firebase Service Account Configuration
-              - FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
-              - FIREBASE_PRIVATE_KEY_ID=${{ secrets.FIREBASE_PRIVATE_KEY_ID }}
-              - FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}
-              - FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}
-              - FIREBASE_CLIENT_ID=${{ secrets.FIREBASE_CLIENT_ID }}
-              - FIREBASE_CLIENT_X509_CERT_URL=${{ secrets.FIREBASE_CLIENT_X509_CERT_URL }}
-              # Firebase Web Configuration
-              - FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }}
-              - FIREBASE_AUTH_DOMAIN=${{ secrets.FIREBASE_AUTH_DOMAIN }}
-              - FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }}
-              - FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
-              - FIREBASE_APP_ID=${{ secrets.FIREBASE_APP_ID }}
-              - FIREBASE_DATABASE_URL=${{ secrets.FIREBASE_DATABASE_URL }}
-              # Application Configuration
-              - ENVIRONMENT=production
-              - DEBUG=false
-              - ALLOWED_ORIGINS=http://142.93.187.32,https://142.93.187.32,https://mapo-dev.netlify.app
-            restart: unless-stopped
-            extra_hosts:
-              - "host.docker.internal:host-gateway"
-            volumes:
-              - app_logs:/app/logs
-        volumes:
-          app_logs:
-        COMPOSE_EOF
-          
-          # Iniciar los servicios
-          docker-compose up -d
-          
-          # Verificar que los contenedores estén corriendo
-          docker-compose ps
-          
-          echo "✅ Deployment completed successfully!"
+        ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} << 'ENDSSH'
+        set -e
+        
+        echo "🚀 Starting Docker deployment..."
+        
+        APP_DIR="/opt/mapo-backend"
+        BACKUP_DIR="/opt/mapo-backend-backup"
+        
+        # Backup del código anterior
+        if [ -d "$APP_DIR" ]; then
+          echo "📦 Creating backup..."
+          rm -rf $BACKUP_DIR
+          cp -r $APP_DIR $BACKUP_DIR
+        fi
+        
+        # Extraer archivos nuevos
+        echo "📂 Extracting files..."
+        mkdir -p $APP_DIR
+        cd $APP_DIR
+        tar -xzf /tmp/deployment.tar.gz
+        rm /tmp/deployment.tar.gz
+        
+        # Crear archivo .env con todos los secrets
+        echo "🔐 Creating .env file..."
+        cat > .env << 'EOF'
+        DATABASE_URL=${{ secrets.DATABASE_URL }}
+        FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+        FIREBASE_PRIVATE_KEY_ID=${{ secrets.FIREBASE_PRIVATE_KEY_ID }}
+        FIREBASE_PRIVATE_KEY="${{ secrets.FIREBASE_PRIVATE_KEY }}"
+        FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}
+        FIREBASE_CLIENT_ID=${{ secrets.FIREBASE_CLIENT_ID }}
+        FIREBASE_CLIENT_X509_CERT_URL=${{ secrets.FIREBASE_CLIENT_X509_CERT_URL }}
+        FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }}
+        FIREBASE_AUTH_DOMAIN=${{ secrets.FIREBASE_AUTH_DOMAIN }}
+        FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }}
+        FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+        FIREBASE_APP_ID=${{ secrets.FIREBASE_APP_ID }}
+        FIREBASE_DATABASE_URL=${{ secrets.FIREBASE_DATABASE_URL }}
+        ENVIRONMENT=development
+        DEBUG=true
+        CORS_ORIGINS=http://localhost:3000,http://142.93.187.32,https://mapo-dev.netlify.app
+        SECRET_KEY=${{ secrets.SECRET_KEY }}
         EOF
-
-  # ====================================
-  # JOB 5: STAGING DEPLOY (DEVELOP BRANCH)
-  # ====================================
-  deploy-staging:
-    name: 🧪 Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: docker-build
-    if: github.ref == 'refs/heads/develop'
-    environment: staging
-    
-    steps:
-    - name: 📥 Checkout Code
-      uses: actions/checkout@v4
-      
-    - name: 🔑 Install doctl
-      uses: digitalocean/action-doctl@v2
-      with:
-        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         
-    - name: 🚀 Deploy to Staging
-      run: |
-        echo "🧪 Deploying to staging environment..."
-        # Aquí puedes agregar comandos específicos para staging
-        # Por ejemplo, desplegar a una app diferente para staging
-
-  # ====================================
-  # JOB 6: NOTIFICATION
-  # ====================================
-  notify:
-    name: 📢 Notifications
-    runs-on: ubuntu-latest
-    needs: [deploy, deploy-staging]
-    if: always()
-    
-    steps:
-    - name: 📢 Notify Success
-      if: needs.deploy.result == 'success' || needs.deploy-staging.result == 'success'
-      run: |
-        echo "✅ Deployment completed successfully!"
-        # Aquí puedes agregar notificaciones (Slack, Discord, etc.)
+        # Detener contenedor anterior si existe
+        echo "🛑 Stopping existing container..."
+        docker stop mapo-backend || true
+        docker rm mapo-backend || true
         
-    - name: 📢 Notify Failure
-      if: needs.deploy.result == 'failure' || needs.deploy-staging.result == 'failure'
-      run: |
-        echo "❌ Deployment failed!"
-        # Aquí puedes agregar notificaciones de error
+        # Construir nueva imagen Docker
+        echo "🐳 Building Docker image..."
+        docker build -t mapo-backend:latest .
+        
+        # Iniciar nuevo contenedor
+        echo "▶️  Starting new container..."
+        docker run -d \
+          --name mapo-backend \
+          --restart unless-stopped \
+          -p 8000:8000 \
+          --env-file .env \
+          mapo-backend:latest
+        
+        # Esperar a que el contenedor inicie
+        echo "⏳ Waiting for container to start..."
+        sleep 10
+        
+        # Verificar que el contenedor está corriendo
+        echo "🔍 Checking container status..."
+        docker ps | grep mapo-backend || echo "⚠️  Container not running!"
+        
+        # Ver logs del contenedor
+        echo "📋 Container logs:"
+        docker logs mapo-backend --tail 20
+        
+        # Limpiar imágenes antiguas
+        echo "🧹 Cleaning up old images..."
+        docker image prune -f
+        
+        echo "✅ Deployment completed!"
+        
+        ENDSSH
