@@ -18,6 +18,7 @@ class Entity(str, Enum):
     CLIENTS = "CLIENTS"
     SALES_ORDERS = "SALES_ORDERS"
     INVENTORY_STOCK = "INVENTORY_STOCK"
+    INVENTORY = "INVENTORY"  # Acceso completo a inventario (solo admin/superadmin)
 
 
 class PermissionLevel(str, Enum):
@@ -147,6 +148,28 @@ PERMISSIONS_CONFIG: Dict[Entity, Dict[Action, Dict[RoleEnum, PermissionLevel]]] 
         },
         Action.READ: {
             RoleEnum.USER: PermissionLevel.ALL,
+            RoleEnum.ADMIN: PermissionLevel.ALL,
+            RoleEnum.SUPERADMIN: PermissionLevel.ALL,
+        },
+        Action.UPDATE: {
+            RoleEnum.USER: PermissionLevel.NONE,
+            RoleEnum.ADMIN: PermissionLevel.ALL,
+            RoleEnum.SUPERADMIN: PermissionLevel.ALL,
+        },
+        Action.DELETE: {
+            RoleEnum.USER: PermissionLevel.NONE,
+            RoleEnum.ADMIN: PermissionLevel.ALL,
+            RoleEnum.SUPERADMIN: PermissionLevel.ALL,
+        },
+    },
+    Entity.INVENTORY: {
+        Action.CREATE: {
+            RoleEnum.USER: PermissionLevel.NONE,
+            RoleEnum.ADMIN: PermissionLevel.ALL,
+            RoleEnum.SUPERADMIN: PermissionLevel.ALL,
+        },
+        Action.READ: {
+            RoleEnum.USER: PermissionLevel.NONE,
             RoleEnum.ADMIN: PermissionLevel.ALL,
             RoleEnum.SUPERADMIN: PermissionLevel.ALL,
         },
