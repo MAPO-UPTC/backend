@@ -1,7 +1,9 @@
 import uuid
+
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from sqlalchemy.orm import Session
+
 from database import engine
 from models_db import Person
 from schemas.person import PersonCreate, PersonUpdate

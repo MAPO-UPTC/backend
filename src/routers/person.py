@@ -1,15 +1,17 @@
-from typing import List, Optional
 import uuid
+from typing import List, Optional
+
 from fastapi import APIRouter, Depends, Query
-from schemas.person import PersonCreate, PersonUpdate, PersonResponse
-from utils.auth import get_current_user_from_db
+
+from schemas.person import PersonCreate, PersonResponse, PersonUpdate
 from services.person_service import (
     create_person_service,
     get_all_persons_service,
     get_person_by_id_service,
-    update_person_service,
     search_persons_service,
+    update_person_service,
 )
+from utils.auth import get_current_user_from_db
 
 router = APIRouter()
 

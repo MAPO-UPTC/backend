@@ -4,26 +4,28 @@ Router para manejo de ventas - Versión simplificada
 
 from datetime import datetime
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+
 from database import get_db
-from utils.auth import get_current_user_from_db
 from schemas.sales import (
-    SimpleSaleCreate,
+    SaleDetailFullResponse,
     SaleResponse,
     SalesReportFilter,
-    SaleDetailFullResponse,
+    SimpleSaleCreate,
 )
 from services.sales_service import (
     create_sale,
-    get_sales,
-    get_sale_by_id,
-    get_sale_by_code,
-    get_sales_report,
     get_best_selling_products,
     get_daily_sales_summary,
+    get_sale_by_code,
+    get_sale_by_id,
     get_sale_full_details,
+    get_sales,
+    get_sales_report,
 )
+from utils.auth import get_current_user_from_db
 
 router = APIRouter(
     prefix="/sales",

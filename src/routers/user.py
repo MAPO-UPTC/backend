@@ -1,6 +1,8 @@
 import uuid
 from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException
+
 from config.permissions import PermissionManager
 from constants.role import RoleEnum
 from schemas.user import (

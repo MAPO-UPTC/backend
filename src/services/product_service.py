@@ -1,18 +1,20 @@
 import uuid
 from datetime import datetime
+
 from fastapi import HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+
 from database import engine
 from models_db import (
-    Sale,
-    SaleDetail,
     BulkConversion,
     LotDetail,
     Product,
     ProductPresentation,
+    Sale,
+    SaleDetail,
 )
 from schemas.product import BulkConversionCreate, ProductCreate, ProductUpdate
-from sqlalchemy import select
 
 
 def sell_bulk_service(
@@ -185,7 +187,8 @@ def get_products_service():
     incluyendo stock a granel (BulkConversion).
     """
     from sqlalchemy import func
-    from models_db import ProductPresentation, LotDetail, BulkConversion
+
+    from models_db import BulkConversion, LotDetail, ProductPresentation
 
     with Session(engine) as session:
         products = session.query(Product).all()
@@ -268,7 +271,8 @@ def get_product_by_id_service(product_id: uuid.UUID):
     Servicio para obtener un producto por ID con información completa de presentaciones y stock.
     """
     from sqlalchemy import func
-    from models_db import ProductPresentation, LotDetail, BulkConversion
+
+    from models_db import BulkConversion, LotDetail, ProductPresentation
 
     with Session(engine) as session:
         product = session.query(Product).filter(Product.id == product_id).first()
@@ -390,7 +394,8 @@ def get_products_by_category_service(category_id: uuid.UUID):
     incluyendo información de stock disponible y stock a granel.
     """
     from sqlalchemy import func
-    from models_db import Product, ProductPresentation, LotDetail, BulkConversion
+
+    from models_db import BulkConversion, LotDetail, Product, ProductPresentation
 
     with Session(engine) as session:
         # Filtrar productos por category_id

@@ -1,5 +1,6 @@
-import time
 import os
+import time
+
 import firebase_admin
 import uvicorn
 from fastapi import FastAPI, Request
@@ -7,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from firebase_admin import credentials
 from sqlalchemy import text
+
 from config.settings import settings
 
 print(f"[MAPO] DATABASE_URL usado: {os.environ.get('DATABASE_URL')}")
@@ -14,8 +16,7 @@ from database import engine
 from models_db import Base
 
 # Routers
-from routers import client, product, user, category, person
-from routers import inventory, sales_clean
+from routers import category, client, inventory, person, product, sales_clean, user
 from utils.logging_config import (
     log_error,
     log_request,

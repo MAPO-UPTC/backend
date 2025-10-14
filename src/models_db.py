@@ -1,8 +1,9 @@
 # Modelos de Base de Datos MAPO
 
-import uuid
 import os
+import uuid
 from typing import Optional
+
 from sqlalchemy import (
     Boolean,
     DateTime,

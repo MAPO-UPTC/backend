@@ -4,31 +4,33 @@ Router para manejo de inventario (ingreso de productos)
 
 from datetime import datetime
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+
 from database import get_db
-from utils.auth import get_current_user
+from models_db import Lot, Product, ProductPresentation
 from schemas.inventory import (
     LotCreate,
-    LotResponse,
     LotDetailCreate,
     LotDetailResponse,
+    LotResponse,
     SupplierCreate,
     SupplierResponse,
 )
-from models_db import Lot, ProductPresentation, Product
 from services.inventory_service import (
     create_lot,
-    get_lots,
+    create_supplier,
+    get_available_stock_by_presentation,
     get_lot_by_id,
     get_lot_details_by_lot,
-    get_stock_report,
-    get_available_stock_by_presentation,
-    create_supplier,
-    get_suppliers,
-    get_supplier_by_id,
     get_lot_details_by_presentation,
+    get_lots,
+    get_stock_report,
+    get_supplier_by_id,
+    get_suppliers,
 )
+from utils.auth import get_current_user
 
 router = APIRouter(
     prefix="/inventory",

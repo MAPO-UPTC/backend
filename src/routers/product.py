@@ -1,22 +1,24 @@
-from fastapi import APIRouter, Depends, Body
-from models_db import BulkConversion
-from sqlalchemy.orm import Session
+import uuid
+from typing import List
+
+from fastapi import APIRouter, Body, Depends
 from sqlalchemy import text
-from database import engine
+from sqlalchemy.orm import Session
+
 from config.permissions import Action, Entity
-from schemas.product import ProductCreate, ProductUpdate, BulkConversionCreate
+from database import engine
+from models_db import BulkConversion
+from schemas.product import BulkConversionCreate, ProductCreate, ProductUpdate
 from services.product_service import (
     create_product_service,
     delete_product_service,
     get_product_by_id_service,
     get_products_service,
-    update_product_service,
-    sell_bulk_service,
     open_bulk_conversion_service,
+    sell_bulk_service,
+    update_product_service,
 )
 from utils.auth import require_permission
-import uuid
-from typing import List
 
 router = APIRouter()
 

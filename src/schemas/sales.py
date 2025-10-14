@@ -5,6 +5,7 @@ Esquemas para el sistema de ventas - Versión simplificada
 import uuid
 from datetime import datetime
 from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
 

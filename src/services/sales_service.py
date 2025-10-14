@@ -4,17 +4,19 @@ Servicio para manejo de ventas
 
 from datetime import datetime
 from typing import List, Optional
-from sqlalchemy.orm import Session
+
 from sqlalchemy import func
+from sqlalchemy.orm import Session
+
 from src.models_db import (
+    BulkConversion,
+    LotDetail,
+    Person,
+    Product,
+    ProductPresentation,
     Sale,
     SaleDetail,
-    ProductPresentation,
-    Person,
     User,
-    LotDetail,
-    BulkConversion,
-    Product,
 )
 from src.schemas.sales import SalesReportFilter
 from src.services import inventory_service

@@ -1,9 +1,11 @@
 import os
 import sys
 from typing import Dict, Optional
+
 from fastapi import HTTPException, Request
 from firebase_admin import auth as admin_auth
 from sqlalchemy.orm import Session
+
 from config.permissions import Action, Entity, PermissionLevel, PermissionManager
 from constants.role import RoleEnum, RoleManager
 from database import engine
