@@ -65,14 +65,27 @@ jobs:
         
     - name: Create deployment package
       run: |
-        tar -czf deployment.tar.gz \
+        tar --ignore-failed-read -czf deployment.tar.gz \
           --exclude='.git' \
+          --exclude='.github' \
           --exclude='__pycache__' \
           --exclude='*.pyc' \
+          --exclude='*.pyo' \
           --exclude='.env' \
+          --exclude='.env.*' \
           --exclude='venv' \
           --exclude='mapo' \
           --exclude='tests' \
+          --exclude='*.log' \
+          --exclude='logs' \
+          --exclude='.pytest_cache' \
+          --exclude='.mypy_cache' \
+          --exclude='.coverage' \
+          --exclude='*.egg-info' \
+          --exclude='dist' \
+          --exclude='build' \
+          --exclude='.DS_Store' \
+          --exclude='deployment.tar.gz' \
           .
         
     - name: Transfer to droplet
