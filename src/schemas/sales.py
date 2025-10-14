@@ -1,6 +1,7 @@
 """
 Esquemas para el sistema de ventas - Versión simplificada
 """
+
 import uuid
 from datetime import datetime
 from typing import List, Optional
@@ -12,7 +13,10 @@ class SimpleSaleItem(BaseModel):
     """
     Item simplificado para crear una venta
     """
-    presentation_id: uuid.UUID = Field(..., description="ID de la presentación del producto")
+
+    presentation_id: uuid.UUID = Field(
+        ..., description="ID de la presentación del producto"
+    )
     quantity: int = Field(..., gt=0, description="Cantidad a vender")
     unit_price: float = Field(..., gt=0, description="Precio unitario")
 
@@ -21,9 +25,12 @@ class SimpleSaleCreate(BaseModel):
     """
     Esquema simplificado para crear una venta
     """
+
     customer_id: uuid.UUID = Field(..., description="ID del cliente (person)")
     status: str = Field(default="completed", description="Estado de la venta")
-    items: List[SimpleSaleItem] = Field(..., min_items=1, description="Items de la venta")
+    items: List[SimpleSaleItem] = Field(
+        ..., min_items=1, description="Items de la venta"
+    )
 
 
 # Esquemas de respuesta
@@ -36,7 +43,7 @@ class SaleDetailResponse(BaseModel):
     quantity: int
     unit_price: float
     line_total: float
-    
+
     class Config:
         from_attributes = True
 
@@ -45,6 +52,7 @@ class SaleDetailExtended(BaseModel):
     """
     Detalle de venta extendido con información del producto
     """
+
     id: uuid.UUID
     sale_id: uuid.UUID
     presentation_id: uuid.UUID
@@ -53,12 +61,12 @@ class SaleDetailExtended(BaseModel):
     quantity: int
     unit_price: float
     line_total: float
-    
+
     # Información del producto
     product_name: str = Field(..., description="Nombre del producto")
     presentation_name: str = Field(..., description="Nombre de la presentación")
     cost_price: float = Field(..., description="Precio de costo del producto")
-    
+
     class Config:
         from_attributes = True
 
@@ -72,7 +80,7 @@ class SaleResponse(BaseModel):
     total: float
     status: str
     items: List[SaleDetailResponse] = Field(default=[])
-    
+
     class Config:
         from_attributes = True
 
@@ -81,6 +89,7 @@ class SaleDetailFullResponse(BaseModel):
     """
     Respuesta completa de una venta con detalles extendidos de productos
     """
+
     id: uuid.UUID
     sale_code: str
     sale_date: datetime
@@ -88,17 +97,19 @@ class SaleDetailFullResponse(BaseModel):
     user_id: uuid.UUID
     total: float
     status: str
-    
+
     # Información del cliente
     customer_name: str = Field(..., description="Nombre completo del cliente")
     customer_document: str = Field(..., description="Documento del cliente")
-    
+
     # Información del vendedor
     seller_name: str = Field(..., description="Nombre del vendedor")
-    
+
     # Items con información extendida
-    items: List[SaleDetailExtended] = Field(default=[], description="Detalles de la venta con info de productos")
-    
+    items: List[SaleDetailExtended] = Field(
+        default=[], description="Detalles de la venta con info de productos"
+    )
+
     class Config:
         from_attributes = True
 

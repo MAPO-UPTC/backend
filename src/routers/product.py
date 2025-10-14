@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, Body
 from models_db import BulkConversion
 from sqlalchemy.orm import Session
@@ -20,6 +19,7 @@ import uuid
 from typing import List
 
 router = APIRouter()
+
 
 @router.post("/migrate-db/", response_model=dict)
 async def migrate_product_presentation_table(
@@ -68,9 +68,9 @@ async def migrate_product_presentation_table(
                 ALTER TABLE product_presentation ADD COLUMN active INTEGER NOT NULL DEFAULT 1;
             END IF;
         END $$;
-        """
+        """,
     ]
-    
+
     try:
         with engine.connect() as connection:
             for query in migration_queries:
@@ -138,33 +138,48 @@ async def migrate_inventory_sales_tables(
             discount REAL DEFAULT 0,
             subtotal REAL NOT NULL
         )
-        """
+        """,
     ]
-    
+
     try:
         with engine.connect() as connection:
             with connection.begin():
                 for query in migration_queries:
                     connection.execute(text(query))
-                
+
                 # Migrar datos existentes de lot_detail si existe
                 try:
-                    connection.execute(text("""
+                    connection.execute(
+                        text(
+                            """
                         INSERT INTO lot_detail_new (id, lot_id, presentation_id, quantity_received, quantity_available, unit_cost, batch_number)
                         SELECT id, lot_id, presentation_id, quantity_received, quantity_available, unit_cost, batch_number
                         FROM lot_detail
-                    """))
-                    
+                    """
+                        )
+                    )
+
                     # Eliminar tabla vieja y renombrar
                     connection.execute(text("DROP TABLE lot_detail"))
-                    connection.execute(text("ALTER TABLE lot_detail_new RENAME TO lot_detail"))
+                    connection.execute(
+                        text("ALTER TABLE lot_detail_new RENAME TO lot_detail")
+                    )
                 except:
                     # Si no existe la tabla vieja, solo renombrar
-                    connection.execute(text("ALTER TABLE lot_detail_new RENAME TO lot_detail"))
-                
-        return {"message": "Inventory and sales tables migration completed successfully", "status": "success"}
+                    connection.execute(
+                        text("ALTER TABLE lot_detail_new RENAME TO lot_detail")
+                    )
+
+        return {
+            "message": "Inventory and sales tables migration completed successfully",
+            "status": "success",
+        }
     except Exception as e:
-        return {"message": f"Inventory and sales migration failed: {str(e)}", "status": "error"}
+        return {
+            "message": f"Inventory and sales migration failed: {str(e)}",
+            "status": "error",
+        }
+
 
 @router.get("/bulk-stock/", response_model=list)
 async def get_bulk_stock():
@@ -172,7 +187,11 @@ async def get_bulk_stock():
     Consultar stock a granel activo (BulkConversion).
     """
     with Session(engine) as session:
-        bulks = session.query(BulkConversion).filter(BulkConversion.status == "ACTIVE").all()
+        bulks = (
+            session.query(BulkConversion)
+            .filter(BulkConversion.status == "ACTIVE")
+            .all()
+        )
         return [
             {
                 "bulk_conversion_id": str(bulk.id),
@@ -180,10 +199,12 @@ async def get_bulk_stock():
                 "converted_quantity": bulk.converted_quantity,
                 "target_presentation_id": str(bulk.target_presentation_id),
                 "conversion_date": str(bulk.conversion_date),
-                "status": bulk.status
+                "status": bulk.status,
             }
             for bulk in bulks
         ]
+
+
 @router.post("/sell-bulk/", response_model=dict)
 async def sell_bulk(
     bulk_conversion_id: uuid.UUID = Body(...),
@@ -196,7 +217,10 @@ async def sell_bulk(
     """
     Registrar venta a granel y descontar stock.
     """
-    return sell_bulk_service(bulk_conversion_id, quantity, unit_price, customer_id, user_id)
+    return sell_bulk_service(
+        bulk_conversion_id, quantity, unit_price, customer_id, user_id
+    )
+
 
 @router.post("/open-bulk/", response_model=dict)
 async def open_bulk(

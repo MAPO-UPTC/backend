@@ -73,6 +73,7 @@ async def get_products_by_category(category_id: uuid.UUID):
     Obtener todos los productos de una categoría específica (público).
     """
     from services.product_service import get_products_by_category_service
+
     return get_products_by_category_service(category_id)
 
 

@@ -12,6 +12,7 @@ from sqlalchemy import text
 
 # Configuración y logging
 from config.settings import settings
+
 print(f"[MAPO] DATABASE_URL usado: {os.environ.get('DATABASE_URL')}")
 from database import engine
 from models_db import Base
@@ -80,11 +81,12 @@ app = FastAPI(
     redoc_url="/redoc" if settings.DEBUG else None,
     # Configurar seguridad para Swagger
     dependencies=[],
-    swagger_ui_parameters={"persistAuthorization": True}
+    swagger_ui_parameters={"persistAuthorization": True},
 )
 
 # Agregar esquema de seguridad JWT para Swagger
 from fastapi.openapi.utils import get_openapi
+
 
 def custom_openapi():
     if app.openapi_schema:
@@ -106,11 +108,10 @@ def custom_openapi():
     for path in openapi_schema["paths"]:
         for method in openapi_schema["paths"][path]:
             if method.lower() != "options":
-                openapi_schema["paths"][path][method]["security"] = [
-                    {"BearerAuth": []}
-                ]
+                openapi_schema["paths"][path][method]["security"] = [{"BearerAuth": []}]
     app.openapi_schema = openapi_schema
     return app.openapi_schema
+
 
 app.openapi = custom_openapi
 

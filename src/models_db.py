@@ -13,7 +13,7 @@ from sqlalchemy import (
     String,
     Uuid,
     func,
-    text
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -35,11 +35,14 @@ def uuid_default():
 # MODELOS DE INVENTARIO Y LOTES
 # =====================
 
+
 class LotDetail(Base):
     __tablename__ = "lot_detail"
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     lot_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
-    presentation_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("product_presentation.id"), nullable=False)
+    presentation_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("product_presentation.id"), nullable=False
+    )
     quantity_received: Mapped[int] = mapped_column(Integer, nullable=False)
     quantity_available: Mapped[int] = mapped_column(Integer, nullable=False)
     unit_cost: Mapped[float] = mapped_column(Float, nullable=False)
@@ -50,14 +53,20 @@ class Lot(Base):
     __tablename__ = "lot"
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     lot_code: Mapped[str] = mapped_column(String, nullable=False)
-    supplier_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("supplier.id"), nullable=False)
+    supplier_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("supplier.id"), nullable=False
+    )
     expiry_date: Mapped[Optional[DateTime]] = mapped_column(DateTime, nullable=True)
     received_date: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False)
     total_cost: Mapped[float] = mapped_column(Float, nullable=False)
     notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    created_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=func.now())
-    updated_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, default=func.now()
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, default=func.now(), onupdate=func.now()
+    )
 
 
 class Supplier(Base):
@@ -73,16 +82,15 @@ class Supplier(Base):
 # MODELOS DE PERSONAS Y USUARIOS
 # =====================
 
+
 class Person(Base):
     __tablename__ = "person"
-    id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
     last_name: Mapped[str] = mapped_column(String, nullable=False)
     document_type: Mapped[str] = mapped_column(String, nullable=False)
     document_number: Mapped[str] = mapped_column(String, nullable=False)
-    
+
     # Relación con User
     user: Mapped[Optional["User"]] = relationship("User", back_populates="person")
 
@@ -98,7 +106,7 @@ class User(Base):
         Uuid, ForeignKey("person.id"), nullable=False
     )
     firebase_uid: Mapped[str] = mapped_column(String, nullable=False)
-    
+
     # Relación con Person
     person: Mapped["Person"] = relationship("Person", back_populates="user")
 
@@ -113,18 +121,21 @@ class Role(Base):
 
 class UserRole(Base):
     __tablename__ = "user_role"
-    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid_default())
-    role_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid_default())
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, primary_key=True, default=uuid_default()
+    )
+    role_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, primary_key=True, default=uuid_default()
+    )
 
 
 # MODELOS DE PRODUCTOS Y CATEGORÍAS
 # =====================
 
+
 class Category(Base):
     __tablename__ = "category"
-    id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
@@ -132,85 +143,120 @@ class Category(Base):
 
 class Product(Base):
     __tablename__ = "product"
-    id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=False)
-    category_id: Mapped[Optional[uuid.UUID]] = mapped_column(Uuid, ForeignKey("category.id"), nullable=True)
+    category_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        Uuid, ForeignKey("category.id"), nullable=True
+    )
     image_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     brand: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     base_unit: Mapped[str] = mapped_column(String, nullable=False)
-    
+
     # Relación con presentaciones
-    presentations: Mapped[list["ProductPresentation"]] = relationship("ProductPresentation", back_populates="product")
+    presentations: Mapped[list["ProductPresentation"]] = relationship(
+        "ProductPresentation", back_populates="product"
+    )
 
 
 class ProductPresentation(Base):
     __tablename__ = "product_presentation"
-    id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, default=uuid.uuid4
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    product_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("product.id"), nullable=False
     )
-    product_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("product.id"), nullable=False)
     presentation_name: Mapped[str] = mapped_column(String, nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     unit: Mapped[str] = mapped_column(String, nullable=False)
     sku: Mapped[str] = mapped_column(String, nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    created_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=func.now())
-    updated_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, default=func.now()
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, default=func.now(), onupdate=func.now()
+    )
     price: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
-    
+
     # Relación con producto
     product: Mapped["Product"] = relationship("Product", back_populates="presentations")
 
 
 class BulkConversion(Base):
     __tablename__ = "bulk_conversion"
-    id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, default=uuid.uuid4
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    source_lot_detail_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("lot_detail.id"), nullable=False
     )
-    source_lot_detail_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("lot_detail.id"), nullable=False)
-    target_presentation_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("product_presentation.id"), nullable=False)
-    converted_quantity: Mapped[int] = mapped_column(Integer, nullable=False)  # Coincide con DB: integer
-    remaining_bulk: Mapped[int] = mapped_column(Integer, nullable=False)  # Coincide con DB: integer
-    conversion_date: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=func.now())
-    status: Mapped[str] = mapped_column(String, nullable=False, default="ACTIVE")  # ACTIVE, COMPLETED, CANCELLED
-    created_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=func.now())
+    target_presentation_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("product_presentation.id"), nullable=False
+    )
+    converted_quantity: Mapped[int] = mapped_column(
+        Integer, nullable=False
+    )  # Coincide con DB: integer
+    remaining_bulk: Mapped[int] = mapped_column(
+        Integer, nullable=False
+    )  # Coincide con DB: integer
+    conversion_date: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, default=func.now()
+    )
+    status: Mapped[str] = mapped_column(
+        String, nullable=False, default="ACTIVE"
+    )  # ACTIVE, COMPLETED, CANCELLED
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, default=func.now()
+    )
     # Nota: updated_at no existe en la tabla actual de la DB
-    
+
     # Relaciones
     lot_detail: Mapped["LotDetail"] = relationship("LotDetail")
-    target_presentation: Mapped["ProductPresentation"] = relationship("ProductPresentation")
+    target_presentation: Mapped["ProductPresentation"] = relationship(
+        "ProductPresentation"
+    )
 
 
 # MODELOS DE VENTA
 # =====================
+
 
 class Sale(Base):
     __tablename__ = "sale"
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     sale_code: Mapped[str] = mapped_column(String, nullable=False)
     sale_date: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
-    customer_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("person.id"), nullable=False)
-    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("user.id"), nullable=False)
+    customer_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("person.id"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("user.id"), nullable=False
+    )
     total: Mapped[float] = mapped_column(Float, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False)
-    
+
     # Relación con SaleDetail
-    items: Mapped[list["SaleDetail"]] = relationship("SaleDetail", back_populates="sale", lazy="joined")
+    items: Mapped[list["SaleDetail"]] = relationship(
+        "SaleDetail", back_populates="sale", lazy="joined"
+    )
 
 
 class SaleDetail(Base):
     __tablename__ = "sale_detail"
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    sale_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("sale.id"), nullable=False)
-    presentation_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("product_presentation.id"), nullable=False)
-    lot_detail_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("lot_detail.id"), nullable=False)
-    bulk_conversion_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("bulk_conversion.id"), nullable=False)
+    sale_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("sale.id"), nullable=False
+    )
+    presentation_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("product_presentation.id"), nullable=False
+    )
+    lot_detail_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("lot_detail.id"), nullable=False
+    )
+    bulk_conversion_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("bulk_conversion.id"), nullable=False
+    )
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     unit_price: Mapped[float] = mapped_column(Float, nullable=False)
     line_total: Mapped[float] = mapped_column(Float, nullable=False)
-    
+
     # Relación con Sale
     sale: Mapped["Sale"] = relationship("Sale", back_populates="items")

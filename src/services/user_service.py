@@ -27,7 +27,9 @@ def create_user_service(user_data: SignUpSchema):
     with Session(engine) as session:
         existing_user = session.query(User).filter_by(email=user_data.email).first()
         if existing_user:
-            raise HTTPException(status_code=400, detail="User already exists in local DB")
+            raise HTTPException(
+                status_code=400, detail="User already exists in local DB"
+            )
 
     # 2. Crear usuario en Firebase
     try:
@@ -39,7 +41,9 @@ def create_user_service(user_data: SignUpSchema):
         print("Error al crear usuario en Firebase:", e)
         # Si el error es de email ya registrado en Firebase
         if "EMAIL_EXISTS" in str(e):
-            raise HTTPException(status_code=400, detail="User already exists in Firebase")
+            raise HTTPException(
+                status_code=400, detail="User already exists in Firebase"
+            )
         raise HTTPException(status_code=400, detail=str(e))
 
     # 3. Guardar usuario en base de datos local
@@ -83,7 +87,10 @@ def create_user_service(user_data: SignUpSchema):
             firebase_admin.delete_user(firebase_user["localId"])
         except Exception as del_e:
             print("Error eliminando usuario de Firebase:", del_e)
-        raise HTTPException(status_code=400, detail="Error saving user in DB. User removed from Firebase. " + str(e))
+        raise HTTPException(
+            status_code=400,
+            detail="Error saving user in DB. User removed from Firebase. " + str(e),
+        )
 
 
 # COMENTADO - Login con Google (no se usará por ahora)
@@ -192,12 +199,17 @@ def login_service(email: str, password: str):
         with Session(engine) as session:
             print(f"Buscando usuario con email: {email}")
             try:
-                user = session.query(User).options(selectinload(User.person)).filter(User.email == email).first()
+                user = (
+                    session.query(User)
+                    .options(selectinload(User.person))
+                    .filter(User.email == email)
+                    .first()
+                )
                 print(f"Usuario encontrado: {user}")
             except Exception as e:
                 print(f"Error en consulta de base de datos: {e}")
                 raise HTTPException(status_code=400, detail="Database query error")
-                
+
             if user:
                 print(f"Usuario ID: {user.id}, Person ID: {user.person_id}")
                 # Obtener roles
@@ -263,5 +275,6 @@ def login_service(email: str, password: str):
         print(f"Error en login_service: {str(e)}")
         print(f"Tipo de error: {type(e).__name__}")
         import traceback
+
         print(f"Stack trace: {traceback.format_exc()}")
         raise HTTPException(status_code=400, detail="Invalid credentials")
