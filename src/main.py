@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from firebase_admin import credentials
 from sqlalchemy import text
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from config.settings import settings
 
@@ -120,6 +121,9 @@ app.add_middleware(
     allow_methods=["*"],  # Permitir GET, POST, PUT, DELETE, OPTIONS
     allow_headers=["*"],  # Permitir headers como Authorization
 )
+
+# ProxyHeaders middleware para respetar X-Forwarded-Proto de Nginx
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 
 # Middleware para logging de requests
