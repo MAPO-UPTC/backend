@@ -347,3 +347,71 @@ def delete_product_service(product_id: uuid.UUID):
         session.commit()
 
         return {"message": "Product deleted successfully"}
+
+
+def get_products_by_category_service(category_id: uuid.UUID):
+    """
+    Servicio para obtener todos los productos de una categoría específica,
+    incluyendo información de stock disponible y stock a granel.
+    """
+    from sqlalchemy import func
+    from models_db import Product, ProductPresentation, LotDetail, BulkConversion
+    
+    with Session(engine) as session:
+        # Filtrar productos por category_id
+        products = session.query(Product).filter(
+            Product.category_id == category_id
+        ).all()
+        
+        result = []
+        
+        for product in products:
+            # Obtener presentaciones activas del producto
+            presentations = session.query(ProductPresentation).filter(
+                ProductPresentation.product_id == product.id,
+                ProductPresentation.active == True
+            ).all()
+            
+            # Calcular stock para cada presentación
+            presentations_with_stock = []
+            for presentation in presentations:
+                # Calcular stock disponible en lotes normales
+                stock_available = session.query(
+                    func.coalesce(func.sum(LotDetail.quantity_available), 0)
+                ).filter(
+                    LotDetail.presentation_id == presentation.id
+                ).scalar() or 0
+                
+                # Calcular stock a granel disponible para esta presentación
+                bulk_stock = session.query(
+                    func.coalesce(func.sum(BulkConversion.remaining_bulk), 0)
+                ).filter(
+                    BulkConversion.target_presentation_id == presentation.id,
+                    BulkConversion.status == "ACTIVE"
+                ).scalar() or 0
+                
+                presentations_with_stock.append({
+                    "id": str(presentation.id),
+                    "presentation_name": presentation.presentation_name,
+                    "quantity": presentation.quantity,
+                    "unit": presentation.unit,
+                    "sku": presentation.sku,
+                    "price": float(presentation.price),
+                    "stock_available": int(stock_available),
+                    "bulk_stock_available": int(bulk_stock),
+                    "total_stock": int(stock_available + bulk_stock),
+                    "active": presentation.active
+                })
+            
+            result.append({
+                "id": str(product.id),
+                "name": product.name,
+                "description": product.description,
+                "brand": product.brand,
+                "base_unit": product.base_unit,
+                "category_id": str(product.category_id) if product.category_id else None,
+                "image_url": product.image_url,
+                "presentations": presentations_with_stock
+            })
+        
+        return result

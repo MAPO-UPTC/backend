@@ -67,6 +67,15 @@ async def update_category(
     return update_category_service(category_id, category_data)
 
 
+@router.get("/{category_id}/products", response_model=List[dict])
+async def get_products_by_category(category_id: uuid.UUID):
+    """
+    Obtener todos los productos de una categoría específica (público).
+    """
+    from services.product_service import get_products_by_category_service
+    return get_products_by_category_service(category_id)
+
+
 @router.delete("/{category_id}")
 async def delete_category(
     category_id: uuid.UUID,

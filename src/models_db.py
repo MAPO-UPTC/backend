@@ -122,11 +122,12 @@ class UserRole(Base):
 
 class Category(Base):
     __tablename__ = "category"
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, autoincrement=True
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, primary_key=True, default=uuid.uuid4
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
 class Product(Base):
