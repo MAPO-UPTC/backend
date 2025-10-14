@@ -133,7 +133,7 @@ jobs:
         FIREBASE_DATABASE_URL=${{ secrets.FIREBASE_DATABASE_URL }}
         ENVIRONMENT=development
         DEBUG=true
-        CORS_ORIGINS=http://localhost:3000,http://142.93.187.32,https://mapo-dev.netlify.app
+        CORS_ORIGINS=http://localhost:3000,http://142.93.187.32,https://142.93.187.32.nip.io,https://mapo-dev.netlify.app
         SECRET_KEY=${{ secrets.SECRET_KEY }}
         EOF
         
