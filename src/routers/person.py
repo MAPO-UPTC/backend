@@ -1,11 +1,6 @@
 from typing import List, Optional
 import uuid
-
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-
-from database import get_db
-from schemas.user import PersonResponse as UserPersonResponse
+from fastapi import APIRouter, Depends, Query
 from schemas.person import PersonCreate, PersonUpdate, PersonResponse
 from utils.auth import get_current_user_from_db
 from services.person_service import (

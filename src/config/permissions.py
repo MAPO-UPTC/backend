@@ -1,6 +1,5 @@
 from enum import Enum
 from typing import Dict, List
-
 from constants.role import RoleEnum
 
 

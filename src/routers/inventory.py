@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-
 from database import get_db
 from utils.auth import get_current_user
 from schemas.inventory import (
@@ -16,12 +15,10 @@ from schemas.inventory import (
     LotDetailResponse,
     SupplierCreate,
     SupplierResponse,
-    LotDetailExtendedResponse,
 )
 from models_db import Lot, ProductPresentation, Product
 from services.inventory_service import (
     create_lot,
-    create_lot_with_details,
     get_lots,
     get_lot_by_id,
     get_lot_details_by_lot,

@@ -3,8 +3,15 @@ from datetime import datetime
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from database import engine
-from models_db import Sale, SaleDetail, BulkConversion, LotDetail
-from schemas.product import BulkConversionCreate
+from models_db import (
+    Sale,
+    SaleDetail,
+    BulkConversion,
+    LotDetail,
+    Product,
+    ProductPresentation,
+)
+from schemas.product import BulkConversionCreate, ProductCreate, ProductUpdate
 from sqlalchemy import select
 
 
@@ -60,12 +67,6 @@ def sell_bulk_service(
             "bulk_conversion_id": bulk.id,
             "remaining_bulk": bulk.remaining_bulk,
         }
-
-
-from models_db import BulkConversion, LotDetail
-from schemas.product import BulkConversionCreate
-from sqlalchemy import select
-from datetime import datetime
 
 
 def open_bulk_conversion_service(data: BulkConversionCreate):
@@ -124,16 +125,6 @@ def open_bulk_conversion_service(data: BulkConversionCreate):
             "unit_conversion_factor": data.unit_conversion_factor,
             "status": bulk.status,
         }
-
-
-import uuid
-
-from fastapi import HTTPException
-from sqlalchemy.orm import Session
-
-from database import engine
-from models_db import Product, ProductPresentation
-from schemas.product import ProductCreate, ProductUpdate
 
 
 def create_product_service(product_data: ProductCreate):
@@ -206,7 +197,7 @@ def get_products_service():
                 session.query(ProductPresentation)
                 .filter(
                     ProductPresentation.product_id == product.id,
-                    ProductPresentation.active == True,
+                    ProductPresentation.active,
                 )
                 .all()
             )
@@ -289,7 +280,7 @@ def get_product_by_id_service(product_id: uuid.UUID):
             session.query(ProductPresentation)
             .filter(
                 ProductPresentation.product_id == product.id,
-                ProductPresentation.active == True,
+                ProductPresentation.active,
             )
             .all()
         )
@@ -415,7 +406,7 @@ def get_products_by_category_service(category_id: uuid.UUID):
                 session.query(ProductPresentation)
                 .filter(
                     ProductPresentation.product_id == product.id,
-                    ProductPresentation.active == True,
+                    ProductPresentation.active,
                 )
                 .all()
             )

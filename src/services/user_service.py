@@ -2,10 +2,7 @@
 import pyrebase
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, selectinload
-
 from config.permissions import PermissionManager
-
-# Configuración de Firebase usando variables de entorno
 from config.settings import settings
 from constants.role import RoleManager
 from database import engine

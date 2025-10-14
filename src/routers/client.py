@@ -1,8 +1,6 @@
 from typing import List
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-
 from config.permissions import Action, Entity, PermissionManager
 from database import get_db
 from schemas.user import UserResponse

@@ -1,8 +1,6 @@
 import uuid
-from typing import List
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-
 from database import engine
 from models_db import Category
 from schemas.category import CategoryCreate, CategoryUpdate
@@ -44,7 +42,7 @@ def get_categories_service():
     Servicio para obtener todas las categorías activas.
     """
     with Session(engine) as session:
-        categories = session.query(Category).filter(Category.active == True).all()
+        categories = session.query(Category).filter(Category.active).all()
         return [
             {
                 "id": str(category.id),

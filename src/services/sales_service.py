@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-
 from src.models_db import (
     Sale,
     SaleDetail,
@@ -17,7 +16,7 @@ from src.models_db import (
     BulkConversion,
     Product,
 )
-from src.schemas.sales import SimpleSaleCreate, SalesReportFilter
+from src.schemas.sales import SalesReportFilter
 from src.services import inventory_service
 
 

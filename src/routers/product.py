@@ -31,12 +31,12 @@ async def migrate_product_presentation_table(
     """
     migration_queries = [
         """
-        DO $$ 
+        DO $$
         BEGIN
             IF NOT EXISTS (
-                SELECT 1 
-                FROM information_schema.columns 
-                WHERE table_name = 'product_presentation' 
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'product_presentation'
                 AND column_name = 'price'
             ) THEN
                 ALTER TABLE product_presentation ADD COLUMN price FLOAT NOT NULL DEFAULT 0.0;
@@ -44,12 +44,12 @@ async def migrate_product_presentation_table(
         END $$;
         """,
         """
-        DO $$ 
+        DO $$
         BEGIN
             IF NOT EXISTS (
-                SELECT 1 
-                FROM information_schema.columns 
-                WHERE table_name = 'product_presentation' 
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'product_presentation'
                 AND column_name = 'sku'
             ) THEN
                 ALTER TABLE product_presentation ADD COLUMN sku VARCHAR;
@@ -57,12 +57,12 @@ async def migrate_product_presentation_table(
         END $$;
         """,
         """
-        DO $$ 
+        DO $$
         BEGIN
             IF NOT EXISTS (
-                SELECT 1 
-                FROM information_schema.columns 
-                WHERE table_name = 'product_presentation' 
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'product_presentation'
                 AND column_name = 'active'
             ) THEN
                 ALTER TABLE product_presentation ADD COLUMN active INTEGER NOT NULL DEFAULT 1;
@@ -164,7 +164,7 @@ async def migrate_inventory_sales_tables(
                     connection.execute(
                         text("ALTER TABLE lot_detail_new RENAME TO lot_detail")
                     )
-                except:
+                except Exception:
                     # Si no existe la tabla vieja, solo renombrar
                     connection.execute(
                         text("ALTER TABLE lot_detail_new RENAME TO lot_detail")

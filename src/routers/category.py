@@ -1,9 +1,8 @@
 import uuid
 from typing import List
 from fastapi import APIRouter, Depends
-
 from config.permissions import Action, Entity
-from schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse
+from schemas.category import CategoryCreate, CategoryUpdate
 from services.category_service import (
     create_category_service,
     get_categories_service,

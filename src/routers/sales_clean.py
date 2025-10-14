@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-
 from database import get_db
 from utils.auth import get_current_user_from_db
 from schemas.sales import (
@@ -20,7 +19,6 @@ from services.sales_service import (
     get_sales,
     get_sale_by_id,
     get_sale_by_code,
-    get_sale_details_by_sale,
     get_sales_report,
     get_best_selling_products,
     get_daily_sales_summary,

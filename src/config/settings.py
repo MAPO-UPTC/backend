@@ -1,6 +1,5 @@
 import os
 from typing import List
-
 from dotenv import load_dotenv
 
 # Cargar variables de entorno

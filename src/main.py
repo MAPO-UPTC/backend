@@ -1,16 +1,12 @@
 import time
 import os
-
 import firebase_admin
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPBearer
 from firebase_admin import credentials
 from sqlalchemy import text
-
-# Configuración y logging
 from config.settings import settings
 
 print(f"[MAPO] DATABASE_URL usado: {os.environ.get('DATABASE_URL')}")
