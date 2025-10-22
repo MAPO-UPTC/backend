@@ -54,7 +54,7 @@ class Settings:
     # ====================================
     # CONFIGURACIÓN DE APLICACIÓN
     # ====================================
-    DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
+    DEBUG: bool = os.getenv("DEBUG", "flase").lower() == "true"
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     SECRET_KEY: str = os.getenv("SECRET_KEY", "change-this-secret-key")
 
