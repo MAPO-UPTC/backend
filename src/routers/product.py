@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session
 from config.permissions import Action, Entity
 from database import engine
 from models_db import BulkConversion
-from schemas.product import BulkConversionCreate, ProductCreate, ProductUpdate
+from schemas.product import BulkConversionCreate, ProductCreate, ProductUpdate, ProductPresentationCreate
 from services.product_service import (
+    add_presentation_to_product_service,
     create_product_service,
     delete_product_service,
     get_product_by_id_service,
@@ -284,3 +285,15 @@ async def delete_product(
     Eliminar producto - Solo SUPERADMIN puede eliminar productos.
     """
     return delete_product_service(product_id)
+
+@router.post("/{product_id}/presentations", response_model=dict)
+async def add_presentation_to_product(
+    product_id: uuid.UUID,
+    presentation_data: ProductPresentationCreate,
+    current_user=Depends(require_permission(Entity.PRODUCTS, Action.UPDATE)),
+):
+    """
+    Agregar una nueva presentación a un producto existente.
+    Solo ADMIN y SUPERADMIN pueden agregar presentaciones.
+    """
+    return add_presentation_to_product_service(presentation_data, product_id)

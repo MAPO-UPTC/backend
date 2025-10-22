@@ -12,6 +12,9 @@ class ProductPresentationCreate(BaseModel):
     sku: Optional[str] = None
     active: Optional[bool] = True
 
+class ProductPresentationAddToProduct(ProductPresentationCreate):
+    product_id: uuid.UUID
+
 
 class ProductCreate(BaseModel):
     name: str

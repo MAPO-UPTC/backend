@@ -14,7 +14,7 @@ from models_db import (
     Sale,
     SaleDetail,
 )
-from schemas.product import BulkConversionCreate, ProductCreate, ProductUpdate
+from schemas.product import BulkConversionCreate, ProductCreate, ProductUpdate, ProductPresentationCreate
 
 
 def sell_bulk_service(
@@ -387,6 +387,44 @@ def delete_product_service(product_id: uuid.UUID):
 
         return {"message": "Product deleted successfully"}
 
+
+def add_presentation_to_product_service(presentation_data: ProductPresentationCreate, product_id: uuid.UUID):
+    """
+    Servicio para agregar una presentación a un producto existente.
+    """
+    with Session(engine) as session:
+        # Verificar que el producto existe
+        product = session.get(Product, product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        # Crear la nueva presentación
+        db_presentation = ProductPresentation(
+            product_id=product_id,
+            presentation_name=presentation_data.presentation_name,
+            quantity=presentation_data.quantity,
+            unit=presentation_data.unit,
+            price=presentation_data.price,
+            sku=presentation_data.sku,
+            active=presentation_data.active
+        )
+        session.add(db_presentation)
+        session.commit()
+        session.refresh(db_presentation)
+
+        return {
+            "message": "Presentation added successfully",
+            "presentation": {
+                "id": str(db_presentation.id),
+                "presentation_name": db_presentation.presentation_name,
+                "quantity": db_presentation.quantity,
+                "unit": db_presentation.unit,
+                "sku": db_presentation.sku,
+                "price": float(db_presentation.price),
+                "active": db_presentation.active,
+                "product_id": str(db_presentation.product_id)
+            }
+        }
 
 def get_products_by_category_service(category_id: uuid.UUID):
     """
