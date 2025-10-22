@@ -183,67 +183,69 @@ def create_product_service(product_data: ProductCreate):
 
 def get_products_service():
     """
-    Servicio para obtener todos los productos con información de stock disponible,
+    Servicio optimizado para obtener todos los productos con información de stock disponible,
     incluyendo stock a granel (BulkConversion).
+    Usa una sola query para calcular todo el stock de una vez.
     """
-    from sqlalchemy import func
+    from sqlalchemy import case, func
+    from sqlalchemy.orm import joinedload
 
     from models_db import BulkConversion, LotDetail, ProductPresentation
 
     with Session(engine) as session:
-        products = session.query(Product).all()
-        result = []
+        # 1. Obtener todos los productos con sus presentaciones en una sola query
+        products = (
+            session.query(Product)
+            .options(joinedload(Product.presentations))
+            .all()
+        )
 
-        for product in products:
-            # Obtener presentaciones activas del producto
-            presentations = (
-                session.query(ProductPresentation)
-                .filter(
-                    ProductPresentation.product_id == product.id,
-                    ProductPresentation.active,
-                )
-                .all()
+        # 2. Calcular stock regular por presentación (una sola query)
+        stock_query = (
+            session.query(
+                LotDetail.presentation_id,
+                func.sum(LotDetail.quantity_available).label("stock_available"),
             )
+            .group_by(LotDetail.presentation_id)
+            .all()
+        )
+        stock_map = {str(pres_id): int(stock) for pres_id, stock in stock_query}
 
-            # Calcular stock para cada presentación
+        # 3. Calcular stock a granel por presentación (una sola query)
+        bulk_query = (
+            session.query(
+                BulkConversion.target_presentation_id,
+                func.sum(BulkConversion.remaining_bulk).label("bulk_stock"),
+            )
+            .filter(BulkConversion.status == "ACTIVE")
+            .group_by(BulkConversion.target_presentation_id)
+            .all()
+        )
+        bulk_map = {str(pres_id): int(bulk) for pres_id, bulk in bulk_query}
+
+        # 4. Construir respuesta usando los datos precalculados
+        result = []
+        for product in products:
             presentations_with_stock = []
-            for presentation in presentations:
-                # Calcular stock disponible en lotes normales
-                stock_available = (
-                    session.query(
-                        func.coalesce(func.sum(LotDetail.quantity_available), 0)
-                    )
-                    .filter(LotDetail.presentation_id == presentation.id)
-                    .scalar()
-                    or 0
-                )
+            for presentation in product.presentations:
+                if not presentation.active:
+                    continue
 
-                # Calcular stock a granel disponible para esta presentación
-                bulk_stock = (
-                    session.query(
-                        func.coalesce(func.sum(BulkConversion.remaining_bulk), 0)
-                    )
-                    .filter(
-                        BulkConversion.target_presentation_id == presentation.id,
-                        BulkConversion.status == "ACTIVE",
-                    )
-                    .scalar()
-                    or 0
-                )
+                pres_id = str(presentation.id)
+                stock_available = stock_map.get(pres_id, 0)
+                bulk_stock = bulk_map.get(pres_id, 0)
 
                 presentations_with_stock.append(
                     {
-                        "id": str(presentation.id),
+                        "id": pres_id,
                         "presentation_name": presentation.presentation_name,
                         "quantity": presentation.quantity,
                         "unit": presentation.unit,
                         "sku": presentation.sku,
                         "price": float(presentation.price),
-                        "stock_available": int(stock_available),
-                        "bulk_stock_available": int(bulk_stock),  # ✅ Nuevo campo
-                        "total_stock": int(
-                            stock_available + bulk_stock
-                        ),  # ✅ Stock total
+                        "stock_available": stock_available,
+                        "bulk_stock_available": bulk_stock,
+                        "total_stock": stock_available + bulk_stock,
                         "active": presentation.active,
                     }
                 )
@@ -428,69 +430,84 @@ def add_presentation_to_product_service(presentation_data: ProductPresentationCr
 
 def get_products_by_category_service(category_id: uuid.UUID):
     """
-    Servicio para obtener todos los productos de una categoría específica,
+    Servicio optimizado para obtener todos los productos de una categoría específica,
     incluyendo información de stock disponible y stock a granel.
+    Usa queries optimizadas para evitar N+1 queries.
     """
     from sqlalchemy import func
+    from sqlalchemy.orm import joinedload
 
     from models_db import BulkConversion, LotDetail, Product, ProductPresentation
 
     with Session(engine) as session:
-        # Filtrar productos por category_id
+        # 1. Obtener productos de la categoría con sus presentaciones en una sola query
         products = (
-            session.query(Product).filter(Product.category_id == category_id).all()
+            session.query(Product)
+            .options(joinedload(Product.presentations))
+            .filter(Product.category_id == category_id)
+            .all()
         )
 
-        result = []
-
+        # 2. Obtener IDs de todas las presentaciones de estos productos
+        all_presentation_ids = []
         for product in products:
-            # Obtener presentaciones activas del producto
-            presentations = (
-                session.query(ProductPresentation)
-                .filter(
-                    ProductPresentation.product_id == product.id,
-                    ProductPresentation.active,
-                )
-                .all()
+            for pres in product.presentations:
+                if pres.active:
+                    all_presentation_ids.append(pres.id)
+
+        if not all_presentation_ids:
+            return []
+
+        # 3. Calcular stock regular por presentación (una sola query)
+        stock_query = (
+            session.query(
+                LotDetail.presentation_id,
+                func.sum(LotDetail.quantity_available).label("stock_available"),
             )
+            .filter(LotDetail.presentation_id.in_(all_presentation_ids))
+            .group_by(LotDetail.presentation_id)
+            .all()
+        )
+        stock_map = {str(pres_id): int(stock) for pres_id, stock in stock_query}
 
-            # Calcular stock para cada presentación
+        # 4. Calcular stock a granel por presentación (una sola query)
+        bulk_query = (
+            session.query(
+                BulkConversion.target_presentation_id,
+                func.sum(BulkConversion.remaining_bulk).label("bulk_stock"),
+            )
+            .filter(
+                BulkConversion.target_presentation_id.in_(all_presentation_ids),
+                BulkConversion.status == "ACTIVE",
+            )
+            .group_by(BulkConversion.target_presentation_id)
+            .all()
+        )
+        bulk_map = {str(pres_id): int(bulk) for pres_id, bulk in bulk_query}
+
+        # 5. Construir respuesta usando los datos precalculados
+        result = []
+        for product in products:
             presentations_with_stock = []
-            for presentation in presentations:
-                # Calcular stock disponible en lotes normales
-                stock_available = (
-                    session.query(
-                        func.coalesce(func.sum(LotDetail.quantity_available), 0)
-                    )
-                    .filter(LotDetail.presentation_id == presentation.id)
-                    .scalar()
-                    or 0
-                )
+            for presentation in product.presentations:
+                if not presentation.active:
+                    continue
 
-                # Calcular stock a granel disponible para esta presentación
-                bulk_stock = (
-                    session.query(
-                        func.coalesce(func.sum(BulkConversion.remaining_bulk), 0)
-                    )
-                    .filter(
-                        BulkConversion.target_presentation_id == presentation.id,
-                        BulkConversion.status == "ACTIVE",
-                    )
-                    .scalar()
-                    or 0
-                )
+                pres_id = str(presentation.id)
+                stock_available = stock_map.get(pres_id, 0)
+                bulk_stock = bulk_map.get(pres_id, 0)
 
                 presentations_with_stock.append(
                     {
-                        "id": str(presentation.id),
+                        "id": pres_id,
                         "presentation_name": presentation.presentation_name,
                         "quantity": presentation.quantity,
                         "unit": presentation.unit,
                         "sku": presentation.sku,
                         "price": float(presentation.price),
-                        "stock_available": int(stock_available),
-                        "bulk_stock_available": int(bulk_stock),
-                        "total_stock": int(stock_available + bulk_stock),
+                        "stock_available": stock_available,
+                        "bulk_stock_available": bulk_stock,
+                        "total_stock": stock_available + bulk_stock,
                         "active": presentation.active,
                     }
                 )
