@@ -3,7 +3,6 @@ Servicio para gestión de roles y permisos de usuarios
 Solo accesible para SUPERADMIN
 """
 
-import uuid
 from typing import List
 
 from fastapi import HTTPException
@@ -11,7 +10,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from constants.role import RoleEnum, RoleManager
 from database import engine
-from models_db import Person, Role, User, UserRole
+from models_db import Role, User, UserRole
 from schemas.role_management import UserRoleInfo
 
 

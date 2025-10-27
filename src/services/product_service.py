@@ -192,10 +192,10 @@ def get_products_service():
     incluyendo stock a granel (BulkConversion).
     Usa una sola query para calcular todo el stock de una vez.
     """
-    from sqlalchemy import case, func
+    from sqlalchemy import func
     from sqlalchemy.orm import joinedload
 
-    from models_db import BulkConversion, LotDetail, ProductPresentation
+    from models_db import BulkConversion, LotDetail
 
     with Session(engine) as session:
         # 1. Obtener todos los productos con sus presentaciones en una sola query
@@ -277,7 +277,7 @@ def get_product_by_id_service(product_id: uuid.UUID):
     """
     from sqlalchemy import func
 
-    from models_db import BulkConversion, LotDetail, ProductPresentation
+    from models_db import BulkConversion, LotDetail
 
     with Session(engine) as session:
         product = session.query(Product).filter(Product.id == product_id).first()
@@ -443,7 +443,7 @@ def get_products_by_category_service(category_id: uuid.UUID):
     from sqlalchemy import func
     from sqlalchemy.orm import joinedload
 
-    from models_db import BulkConversion, LotDetail, Product, ProductPresentation
+    from models_db import BulkConversion, LotDetail, Product
 
     with Session(engine) as session:
         # 1. Obtener productos de la categoría con sus presentaciones en una sola query

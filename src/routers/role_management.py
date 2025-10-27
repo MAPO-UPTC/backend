@@ -8,7 +8,6 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from config.permissions import Entity, PermissionLevel, PermissionManager
 from constants.role import RoleEnum
 from schemas.role_management import (
     AllUsersRolesResponse,
