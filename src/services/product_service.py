@@ -200,9 +200,7 @@ def get_products_service():
     with Session(engine) as session:
         # 1. Obtener todos los productos con sus presentaciones en una sola query
         products = (
-            session.query(Product)
-            .options(joinedload(Product.presentations))
-            .all()
+            session.query(Product).options(joinedload(Product.presentations)).all()
         )
 
         # 2. Calcular stock regular por presentación (una sola query)
@@ -395,7 +393,9 @@ def delete_product_service(product_id: uuid.UUID):
         return {"message": "Product deleted successfully"}
 
 
-def add_presentation_to_product_service(presentation_data: ProductPresentationCreate, product_id: uuid.UUID):
+def add_presentation_to_product_service(
+    presentation_data: ProductPresentationCreate, product_id: uuid.UUID
+):
     """
     Servicio para agregar una presentación a un producto existente.
     """
@@ -413,7 +413,7 @@ def add_presentation_to_product_service(presentation_data: ProductPresentationCr
             unit=presentation_data.unit,
             price=presentation_data.price,
             sku=presentation_data.sku,
-            active=presentation_data.active
+            active=presentation_data.active,
         )
         session.add(db_presentation)
         session.commit()
@@ -429,9 +429,10 @@ def add_presentation_to_product_service(presentation_data: ProductPresentationCr
                 "sku": db_presentation.sku,
                 "price": float(db_presentation.price),
                 "active": db_presentation.active,
-                "product_id": str(db_presentation.product_id)
-            }
+                "product_id": str(db_presentation.product_id),
+            },
         }
+
 
 def get_products_by_category_service(category_id: uuid.UUID):
     """

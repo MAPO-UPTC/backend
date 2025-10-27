@@ -291,6 +291,7 @@ async def delete_product(
     """
     return delete_product_service(product_id)
 
+
 @router.post("/{product_id}/presentations", response_model=dict)
 async def add_presentation_to_product(
     product_id: uuid.UUID,

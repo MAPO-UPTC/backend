@@ -21,11 +21,7 @@ def get_all_users_with_roles() -> List[UserRoleInfo]:
     Solo para SUPERADMIN
     """
     with Session(engine) as session:
-        users = (
-            session.query(User)
-            .options(selectinload(User.person))
-            .all()
-        )
+        users = session.query(User).options(selectinload(User.person)).all()
 
         users_info = []
         for user in users:
@@ -97,11 +93,11 @@ def assign_role_to_user(user_id: str, role_name: str) -> dict:
     """
     Asignar un rol a un usuario
     Solo para SUPERADMIN
-    
+
     Args:
         user_id: ID del usuario
         role_name: Nombre del rol (USER, ADMIN, SUPERADMIN)
-        
+
     Returns:
         dict con información del usuario actualizado
     """
@@ -177,11 +173,11 @@ def remove_role_from_user(user_id: str, role_name: str) -> dict:
     """
     Remover un rol de un usuario
     Solo para SUPERADMIN
-    
+
     Args:
         user_id: ID del usuario
         role_name: Nombre del rol a remover
-        
+
     Returns:
         dict con información del usuario actualizado
     """
@@ -241,9 +237,7 @@ def remove_role_from_user(user_id: str, role_name: str) -> dict:
         if role_enum == RoleEnum.SUPERADMIN:
             # Contar cuántos SUPERADMIN hay en total
             superadmin_count = (
-                session.query(UserRole)
-                .filter_by(role_id=role_uuid)
-                .count()
+                session.query(UserRole).filter_by(role_id=role_uuid).count()
             )
 
             if superadmin_count <= 1:
@@ -282,11 +276,11 @@ def set_user_roles(user_id: str, roles: List[str]) -> dict:
     """
     Establecer los roles de un usuario (reemplaza todos los roles actuales)
     Solo para SUPERADMIN
-    
+
     Args:
         user_id: ID del usuario
         roles: Lista de nombres de roles
-        
+
     Returns:
         dict con información del usuario actualizado
     """

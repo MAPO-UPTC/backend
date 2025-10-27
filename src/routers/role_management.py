@@ -51,14 +51,14 @@ def require_superadmin(user=Depends(get_user_with_permissions)):
 async def get_all_users_roles(current_user=Depends(require_superadmin)):
     """
     Obtener todos los usuarios con sus roles asignados
-    
+
     **Requiere:** Rol SUPERADMIN
-    
+
     **Retorna:**
     - Lista de todos los usuarios del sistema
     - Información básica de cada usuario (email, nombre, documento)
     - Roles asignados a cada usuario
-    
+
     **Ejemplo de respuesta:**
     ```json
     {
@@ -88,21 +88,19 @@ async def get_all_users_roles(current_user=Depends(require_superadmin)):
 
 
 @router.get("/users/{user_id}", response_model=UserRoleInfo)
-async def get_user_roles(
-    user_id: uuid.UUID, current_user=Depends(require_superadmin)
-):
+async def get_user_roles(user_id: uuid.UUID, current_user=Depends(require_superadmin)):
     """
     Obtener roles de un usuario específico
-    
+
     **Requiere:** Rol SUPERADMIN
-    
+
     **Parámetros:**
     - `user_id`: UUID del usuario
-    
+
     **Retorna:**
     - Información del usuario
     - Roles asignados
-    
+
     **Ejemplo de respuesta:**
     ```json
     {
@@ -133,14 +131,14 @@ async def assign_role(
 ):
     """
     Asignar un rol a un usuario
-    
+
     **Requiere:** Rol SUPERADMIN
-    
+
     **Roles disponibles:**
     - `USER`: Usuario básico (permisos limitados)
     - `ADMIN`: Administrador (permisos amplios)
     - `SUPERADMIN`: Super administrador (todos los permisos)
-    
+
     **Request body:**
     ```json
     {
@@ -148,12 +146,12 @@ async def assign_role(
       "role": "ADMIN"
     }
     ```
-    
+
     **Validaciones:**
     - El usuario debe existir
     - El rol debe ser válido
     - El usuario no debe tener ya ese rol asignado
-    
+
     **Retorna:**
     - Información actualizada del usuario
     - Lista de todos los roles del usuario
@@ -177,9 +175,9 @@ async def remove_role(
 ):
     """
     Remover un rol de un usuario
-    
+
     **Requiere:** Rol SUPERADMIN
-    
+
     **Request body:**
     ```json
     {
@@ -187,17 +185,17 @@ async def remove_role(
       "role": "ADMIN"
     }
     ```
-    
+
     **Validaciones:**
     - El usuario debe existir
     - El usuario debe tener el rol asignado
     - El usuario no puede quedar sin roles (mínimo 1 rol)
     - No se puede remover SUPERADMIN si es el único SUPERADMIN del sistema
-    
+
     **Protecciones de seguridad:**
     - Siempre debe haber al menos un SUPERADMIN en el sistema
     - Un usuario siempre debe tener al menos un rol
-    
+
     **Retorna:**
     - Información actualizada del usuario
     - Lista de roles restantes del usuario
@@ -221,26 +219,26 @@ async def update_user_roles(
 ):
     """
     Actualizar todos los roles de un usuario (reemplaza roles existentes)
-    
+
     **Requiere:** Rol SUPERADMIN
-    
+
     **Parámetros:**
     - `user_id`: UUID del usuario
     - `roles`: Array con los nuevos roles (reemplaza todos los anteriores)
-    
+
     **Request body:**
     ```json
     ["USER", "ADMIN"]
     ```
-    
+
     **Validaciones:**
     - El usuario debe existir
     - Debe proporcionar al menos un rol
     - Todos los roles deben ser válidos
-    
+
     **Nota:** Esta operación reemplaza TODOS los roles actuales del usuario
     con los proporcionados en la lista.
-    
+
     **Retorna:**
     - Información actualizada del usuario
     - Nueva lista de roles
@@ -262,13 +260,13 @@ async def update_user_roles(
 async def get_available_roles(current_user=Depends(require_superadmin)):
     """
     Obtener lista de roles disponibles en el sistema
-    
+
     **Requiere:** Rol SUPERADMIN
-    
+
     **Retorna:**
     - Lista de roles disponibles
     - Descripción de cada rol
-    
+
     **Ejemplo de respuesta:**
     ```json
     {
@@ -314,14 +312,14 @@ async def get_available_roles(current_user=Depends(require_superadmin)):
 async def get_my_permissions_details(current_user=Depends(require_superadmin)):
     """
     Obtener información detallada de los permisos del SUPERADMIN actual
-    
+
     **Requiere:** Rol SUPERADMIN
-    
+
     **Retorna:**
     - Información del usuario
     - Roles asignados
     - Permisos detallados por entidad y acción
-    
+
     Útil para debugging y verificación de permisos.
     """
     return {

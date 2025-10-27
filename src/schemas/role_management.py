@@ -17,7 +17,9 @@ class UserRoleInfo(BaseModel):
     last_name: str
     document_type: str
     document_number: str
-    roles: List[str] = Field(default=[], description="Lista de roles asignados al usuario")
+    roles: List[str] = Field(
+        default=[], description="Lista de roles asignados al usuario"
+    )
 
     class Config:
         from_attributes = True
@@ -26,14 +28,16 @@ class UserRoleInfo(BaseModel):
 class AssignRoleRequest(BaseModel):
     """Request para asignar un rol a un usuario"""
 
-    user_id: uuid.UUID = Field(..., description="ID del usuario al que se asignará el rol")
+    user_id: uuid.UUID = Field(
+        ..., description="ID del usuario al que se asignará el rol"
+    )
     role: str = Field(..., description="Rol a asignar (USER, ADMIN, SUPERADMIN)")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "user_id": "123e4567-e89b-12d3-a456-426614174000",
-                "role": "ADMIN"
+                "role": "ADMIN",
             }
         }
 
@@ -41,14 +45,16 @@ class AssignRoleRequest(BaseModel):
 class RemoveRoleRequest(BaseModel):
     """Request para remover un rol de un usuario"""
 
-    user_id: uuid.UUID = Field(..., description="ID del usuario al que se removerá el rol")
+    user_id: uuid.UUID = Field(
+        ..., description="ID del usuario al que se removerá el rol"
+    )
     role: str = Field(..., description="Rol a remover (USER, ADMIN, SUPERADMIN)")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "user_id": "123e4567-e89b-12d3-a456-426614174000",
-                "role": "ADMIN"
+                "role": "ADMIN",
             }
         }
 
