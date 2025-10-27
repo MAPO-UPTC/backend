@@ -14,7 +14,12 @@ from models_db import (
     Sale,
     SaleDetail,
 )
-from schemas.product import BulkConversionCreate, ProductCreate, ProductUpdate, ProductPresentationCreate
+from schemas.product import (
+    BulkConversionCreate,
+    ProductCreate,
+    ProductPresentationCreate,
+    ProductUpdate,
+)
 
 
 def sell_bulk_service(

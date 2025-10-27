@@ -8,7 +8,12 @@ from sqlalchemy.orm import Session
 from config.permissions import Action, Entity
 from database import engine
 from models_db import BulkConversion
-from schemas.product import BulkConversionCreate, ProductCreate, ProductUpdate, ProductPresentationCreate
+from schemas.product import (
+    BulkConversionCreate,
+    ProductCreate,
+    ProductPresentationCreate,
+    ProductUpdate,
+)
 from services.product_service import (
     add_presentation_to_product_service,
     create_product_service,
