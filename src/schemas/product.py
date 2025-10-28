@@ -17,6 +17,15 @@ class ProductPresentationAddToProduct(ProductPresentationCreate):
     product_id: uuid.UUID
 
 
+class ProductPresentationUpdate(BaseModel):
+    presentation_name: Optional[str] = None
+    quantity: Optional[float] = None
+    unit: Optional[str] = None
+    price: Optional[float] = None
+    sku: Optional[str] = None
+    active: Optional[bool] = None
+
+
 class ProductCreate(BaseModel):
     name: str
     description: str

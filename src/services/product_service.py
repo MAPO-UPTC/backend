@@ -19,6 +19,7 @@ from schemas.product import (
     ProductCreate,
     ProductPresentationCreate,
     ProductUpdate,
+    ProductPresentationUpdate,
 )
 
 
@@ -534,3 +535,59 @@ def get_products_by_category_service(category_id: uuid.UUID):
             )
 
         return result
+
+
+def update_product_presentation_service(
+    product_id: uuid.UUID,
+    presentation_id: uuid.UUID,
+    presentation_data: ProductPresentationUpdate
+):
+    """
+    Servicio para actualizar una presentación existente de un producto.
+    Solo actualiza los campos que fueron enviados explícitamente.
+    """
+    with Session(engine) as session:
+        # Verificar que el producto existe
+        product = session.get(Product, product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        # Verificar que la presentación existe y pertenece al producto
+        presentation = (
+            session.query(ProductPresentation)
+            .filter(
+                ProductPresentation.id == presentation_id,
+                ProductPresentation.product_id == product_id
+            )
+            .first()
+        )
+
+        if not presentation:
+            raise HTTPException(
+                status_code=404,
+                detail="Presentation not found or does not belong to this product"
+            )
+
+        # Actualizar solo los campos que fueron enviados explícitamente
+        update_data = presentation_data.model_dump(exclude_unset=True)
+
+        for field, value in update_data.items():
+            if hasattr(presentation, field):
+                setattr(presentation, field, value)
+
+        session.commit()
+        session.refresh(presentation)
+
+        return {
+            "message": "Presentation updated successfully",
+            "presentation": {
+                "id": str(presentation.id),
+                "presentation_name": presentation.presentation_name,
+                "quantity": presentation.quantity,
+                "unit": presentation.unit,
+                "sku": presentation.sku,
+                "price": float(presentation.price),
+                "active": presentation.active,
+                "product_id": str(presentation.product_id)
+            }
+        }
