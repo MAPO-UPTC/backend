@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from config.permissions import Action, Entity
 from database import engine
 from models_db import BulkConversion
-from schemas.product import BulkConversionCreate, ProductCreate, ProductUpdate, ProductPresentationCreate
+from schemas.product import BulkConversionCreate, ProductCreate, ProductUpdate, ProductPresentationCreate, ProductPresentationUpdate
 from services.product_service import (
     add_presentation_to_product_service,
     create_product_service,
@@ -18,6 +18,7 @@ from services.product_service import (
     open_bulk_conversion_service,
     sell_bulk_service,
     update_product_service,
+    update_product_presentation_service,
 )
 from utils.auth import require_permission
 
@@ -297,3 +298,18 @@ async def add_presentation_to_product(
     Solo ADMIN y SUPERADMIN pueden agregar presentaciones.
     """
     return add_presentation_to_product_service(presentation_data, product_id)
+
+
+@router.put("/{product_id}/presentations/{presentation_id}", response_model=dict)
+async def update_product_presentation(
+    product_id: uuid.UUID,
+    presentation_id: uuid.UUID,
+    presentation_data: ProductPresentationUpdate,
+    current_user=Depends(require_permission(Entity.PRODUCTS, Action.UPDATE)),
+):
+    """
+    Actualizar una presentación existente de un producto.
+    Solo ADMIN y SUPERADMIN pueden actualizar presentaciones.
+    Permite actualizar campos específicos sin afectar los demás.
+    """
+    return update_product_presentation_service(product_id, presentation_id, presentation_data)
