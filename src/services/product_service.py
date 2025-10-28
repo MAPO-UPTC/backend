@@ -14,7 +14,13 @@ from models_db import (
     Sale,
     SaleDetail,
 )
-from schemas.product import BulkConversionCreate, ProductCreate, ProductUpdate, ProductPresentationCreate, ProductPresentationUpdate
+from schemas.product import (
+    BulkConversionCreate,
+    ProductCreate,
+    ProductPresentationCreate,
+    ProductUpdate,
+    ProductPresentationUpdate,
+)
 
 
 def sell_bulk_service(
@@ -187,17 +193,15 @@ def get_products_service():
     incluyendo stock a granel (BulkConversion).
     Usa una sola query para calcular todo el stock de una vez.
     """
-    from sqlalchemy import case, func
+    from sqlalchemy import func
     from sqlalchemy.orm import joinedload
 
-    from models_db import BulkConversion, LotDetail, ProductPresentation
+    from models_db import BulkConversion, LotDetail
 
     with Session(engine) as session:
         # 1. Obtener todos los productos con sus presentaciones en una sola query
         products = (
-            session.query(Product)
-            .options(joinedload(Product.presentations))
-            .all()
+            session.query(Product).options(joinedload(Product.presentations)).all()
         )
 
         # 2. Calcular stock regular por presentación (una sola query)
@@ -274,7 +278,7 @@ def get_product_by_id_service(product_id: uuid.UUID):
     """
     from sqlalchemy import func
 
-    from models_db import BulkConversion, LotDetail, ProductPresentation
+    from models_db import BulkConversion, LotDetail
 
     with Session(engine) as session:
         product = session.query(Product).filter(Product.id == product_id).first()
@@ -390,7 +394,9 @@ def delete_product_service(product_id: uuid.UUID):
         return {"message": "Product deleted successfully"}
 
 
-def add_presentation_to_product_service(presentation_data: ProductPresentationCreate, product_id: uuid.UUID):
+def add_presentation_to_product_service(
+    presentation_data: ProductPresentationCreate, product_id: uuid.UUID
+):
     """
     Servicio para agregar una presentación a un producto existente.
     """
@@ -408,7 +414,7 @@ def add_presentation_to_product_service(presentation_data: ProductPresentationCr
             unit=presentation_data.unit,
             price=presentation_data.price,
             sku=presentation_data.sku,
-            active=presentation_data.active
+            active=presentation_data.active,
         )
         session.add(db_presentation)
         session.commit()
@@ -424,9 +430,10 @@ def add_presentation_to_product_service(presentation_data: ProductPresentationCr
                 "sku": db_presentation.sku,
                 "price": float(db_presentation.price),
                 "active": db_presentation.active,
-                "product_id": str(db_presentation.product_id)
-            }
+                "product_id": str(db_presentation.product_id),
+            },
         }
+
 
 def get_products_by_category_service(category_id: uuid.UUID):
     """
@@ -437,7 +444,7 @@ def get_products_by_category_service(category_id: uuid.UUID):
     from sqlalchemy import func
     from sqlalchemy.orm import joinedload
 
-    from models_db import BulkConversion, LotDetail, Product, ProductPresentation
+    from models_db import BulkConversion, LotDetail, Product
 
     with Session(engine) as session:
         # 1. Obtener productos de la categoría con sus presentaciones en una sola query

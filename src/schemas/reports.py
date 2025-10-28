@@ -5,7 +5,7 @@ Esquemas para reportes de ventas
 import uuid
 from datetime import date, datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List
 
 from pydantic import BaseModel, Field
 
@@ -56,7 +56,9 @@ class SalesReportResponse(BaseModel):
     # Métricas generales
     total_sales: int = Field(..., description="Número total de ventas")
     total_revenue: float = Field(..., description="Ingresos totales")
-    estimated_profit: float = Field(..., description="Ganancia estimada (ingresos - costos)")
+    estimated_profit: float = Field(
+        ..., description="Ganancia estimada (ingresos - costos)"
+    )
     profit_margin: float = Field(..., description="Margen de ganancia en porcentaje")
 
     # Top productos y clientes
@@ -78,7 +80,9 @@ class SalesReportResponse(BaseModel):
 class ReportRequest(BaseModel):
     """Solicitud de reporte"""
 
-    period: ReportPeriod = Field(..., description="Periodo del reporte (daily, weekly, monthly)")
+    period: ReportPeriod = Field(
+        ..., description="Periodo del reporte (daily, weekly, monthly)"
+    )
     reference_date: date = Field(
         ..., description="Fecha de referencia para el reporte (formato: YYYY-MM-DD)"
     )
@@ -94,6 +98,6 @@ class ReportRequest(BaseModel):
             "example": {
                 "period": "daily",
                 "reference_date": "2025-10-21",
-                "top_limit": 10
+                "top_limit": 10,
             }
         }

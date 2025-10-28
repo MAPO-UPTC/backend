@@ -27,12 +27,12 @@ async def get_sales_report(
 ):
     """
     Generar reporte de ventas según periodo y fecha
-    
+
     **Periodos disponibles:**
     - `daily`: Reporte del día específico
     - `weekly`: Reporte de la semana (lunes a domingo) que contiene la fecha
     - `monthly`: Reporte del mes completo
-    
+
     **Incluye:**
     - Ventas totales del periodo
     - Ingresos totales
@@ -42,7 +42,7 @@ async def get_sales_report(
     - Mejores clientes (configurable)
     - Valor promedio por venta
     - Total de items vendidos
-    
+
     **Ejemplo de uso:**
     ```json
     {
@@ -51,7 +51,7 @@ async def get_sales_report(
         "top_limit": 10
     }
     ```
-    
+
     **Respuesta incluye:**
     - Fecha de inicio y fin del periodo calculado
     - Métricas generales de ventas
@@ -88,12 +88,12 @@ async def get_quick_sales_report(
 ):
     """
     Generar reporte de ventas rápido usando parámetros de query
-    
+
     **Parámetros:**
     - `period`: Periodo del reporte (daily, weekly, monthly)
     - `reference_date`: Fecha de referencia (formato: YYYY-MM-DD)
     - `top_limit`: Límite de items para tops (default: 10, max: 50)
-    
+
     **Ejemplos:**
     - Reporte diario: `/reports/sales/quick/daily?reference_date=2025-10-21`
     - Reporte semanal: `/reports/sales/quick/weekly?reference_date=2025-10-21&top_limit=5`
@@ -106,11 +106,11 @@ async def get_quick_sales_report(
             raise ValueError(
                 f"Periodo inválido. Debe ser uno de: {', '.join(valid_periods)}"
             )
-        
+
         # Validar top_limit
         if top_limit < 1 or top_limit > 50:
             raise ValueError("top_limit debe estar entre 1 y 50")
-        
+
         report = generate_sales_report(
             db,
             period=period,
