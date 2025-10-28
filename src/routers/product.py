@@ -12,8 +12,8 @@ from schemas.product import (
     BulkConversionCreate,
     ProductCreate,
     ProductPresentationCreate,
-    ProductUpdate,
     ProductPresentationUpdate,
+    ProductUpdate,
 )
 from services.product_service import (
     add_presentation_to_product_service,
@@ -23,8 +23,8 @@ from services.product_service import (
     get_products_service,
     open_bulk_conversion_service,
     sell_bulk_service,
-    update_product_service,
     update_product_presentation_service,
+    update_product_service,
 )
 from utils.auth import require_permission
 
@@ -319,4 +319,6 @@ async def update_product_presentation(
     Solo ADMIN y SUPERADMIN pueden actualizar presentaciones.
     Permite actualizar campos específicos sin afectar los demás.
     """
-    return update_product_presentation_service(product_id, presentation_id, presentation_data)
+    return update_product_presentation_service(
+        product_id, presentation_id, presentation_data
+    )

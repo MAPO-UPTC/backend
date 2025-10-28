@@ -18,8 +18,8 @@ from schemas.product import (
     BulkConversionCreate,
     ProductCreate,
     ProductPresentationCreate,
-    ProductUpdate,
     ProductPresentationUpdate,
+    ProductUpdate,
 )
 
 
@@ -540,7 +540,7 @@ def get_products_by_category_service(category_id: uuid.UUID):
 def update_product_presentation_service(
     product_id: uuid.UUID,
     presentation_id: uuid.UUID,
-    presentation_data: ProductPresentationUpdate
+    presentation_data: ProductPresentationUpdate,
 ):
     """
     Servicio para actualizar una presentación existente de un producto.
@@ -557,7 +557,7 @@ def update_product_presentation_service(
             session.query(ProductPresentation)
             .filter(
                 ProductPresentation.id == presentation_id,
-                ProductPresentation.product_id == product_id
+                ProductPresentation.product_id == product_id,
             )
             .first()
         )
@@ -565,7 +565,7 @@ def update_product_presentation_service(
         if not presentation:
             raise HTTPException(
                 status_code=404,
-                detail="Presentation not found or does not belong to this product"
+                detail="Presentation not found or does not belong to this product",
             )
 
         # Actualizar solo los campos que fueron enviados explícitamente
@@ -588,6 +588,6 @@ def update_product_presentation_service(
                 "sku": presentation.sku,
                 "price": float(presentation.price),
                 "active": presentation.active,
-                "product_id": str(presentation.product_id)
-            }
+                "product_id": str(presentation.product_id),
+            },
         }
