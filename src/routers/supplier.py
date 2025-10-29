@@ -49,7 +49,9 @@ async def create_supplier_endpoint(
 @router.get("/", response_model=List[SupplierResponse])
 async def get_suppliers_endpoint(
     skip: int = Query(0, ge=0, description="Número de registros a omitir"),
-    limit: int = Query(100, ge=1, le=1000, description="Límite de registros a retornar"),
+    limit: int = Query(
+        100, ge=1, le=1000, description="Límite de registros a retornar"
+    ),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):

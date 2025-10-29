@@ -49,20 +49,20 @@ def update_supplier(
     Actualizar un proveedor existente
     """
     supplier = get_supplier_by_id(db, supplier_id)
-    
+
     if not supplier:
         raise HTTPException(status_code=404, detail="Proveedor no encontrado")
-    
+
     # Actualizar solo los campos que fueron enviados explícitamente
     update_data = supplier_data.model_dump(exclude_unset=True)
-    
+
     for field, value in update_data.items():
         if hasattr(supplier, field):
             setattr(supplier, field, value)
-    
+
     db.commit()
     db.refresh(supplier)
-    
+
     return supplier
 
 
@@ -71,11 +71,11 @@ def delete_supplier(db: Session, supplier_id: str) -> dict:
     Eliminar un proveedor
     """
     supplier = get_supplier_by_id(db, supplier_id)
-    
+
     if not supplier:
         raise HTTPException(status_code=404, detail="Proveedor no encontrado")
-    
+
     db.delete(supplier)
     db.commit()
-    
+
     return {"message": "Proveedor eliminado exitosamente"}
