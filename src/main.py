@@ -26,6 +26,7 @@ from routers import (
     reports,
     role_management,
     sales_clean,
+    supplier,
     user,
 )
 from utils.logging_config import (
@@ -179,6 +180,7 @@ app.include_router(product.router, prefix="/products", tags=["products"])
 app.include_router(client.router, prefix="/clients", tags=["clients"])
 app.include_router(person.router, prefix="/persons", tags=["persons"])
 app.include_router(inventory.router, tags=["inventory"])
+app.include_router(supplier.router, tags=["suppliers"])
 app.include_router(sales_clean.router, tags=["sales"])
 app.include_router(reports.router, tags=["reports"])
 app.include_router(role_management.router, tags=["role-management"])

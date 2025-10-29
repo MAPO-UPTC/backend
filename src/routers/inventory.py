@@ -15,20 +15,15 @@ from schemas.inventory import (
     LotDetailCreate,
     LotDetailResponse,
     LotResponse,
-    SupplierCreate,
-    SupplierResponse,
 )
 from services.inventory_service import (
     create_lot,
-    create_supplier,
     get_available_stock_by_presentation,
     get_lot_by_id,
     get_lot_details_by_lot,
     get_lot_details_by_presentation,
     get_lots,
     get_stock_report,
-    get_supplier_by_id,
-    get_suppliers,
 )
 from utils.auth import get_current_user
 
@@ -331,73 +326,4 @@ async def get_presentation_lot_details(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error obteniendo detalles de lotes: {str(e)}",
-        )
-
-
-# ENDPOINTS PARA PROVEEDORES
-# ==========================
-
-
-@router.post("/suppliers/", response_model=SupplierResponse)
-async def create_supplier_endpoint(
-    supplier: SupplierCreate,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-):
-    """
-    Crear un nuevo proveedor
-    """
-    try:
-        db_supplier = create_supplier(db, supplier)
-        return db_supplier
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creando proveedor: {str(e)}",
-        )
-
-
-@router.get("/suppliers/", response_model=List[SupplierResponse])
-async def get_suppliers_endpoint(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-):
-    """
-    Obtener lista de proveedores
-    """
-    try:
-        suppliers = get_suppliers(db, skip=skip, limit=limit)
-        return suppliers
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error obteniendo proveedores: {str(e)}",
-        )
-
-
-@router.get("/suppliers/{supplier_id}", response_model=SupplierResponse)
-async def get_supplier_by_id_endpoint(
-    supplier_id: str,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-):
-    """
-    Obtener un proveedor específico por ID
-    """
-    try:
-        supplier = get_supplier_by_id(db, supplier_id)
-        if not supplier:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Proveedor con ID {supplier_id} no encontrado",
-            )
-        return supplier
-    except Exception as e:
-        if isinstance(e, HTTPException):
-            raise e
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error obteniendo proveedor: {str(e)}",
         )
