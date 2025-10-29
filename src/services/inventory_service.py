@@ -8,8 +8,8 @@ from typing import List, Optional
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from models_db import Lot, LotDetail, ProductPresentation, Supplier
-from schemas.inventory import LotCreate, LotDetailCreate, SupplierCreate
+from models_db import Lot, LotDetail, ProductPresentation
+from schemas.inventory import LotCreate, LotDetailCreate
 
 
 def create_lot(db: Session, lot: LotCreate) -> Lot:
@@ -221,38 +221,3 @@ def get_stock_report(db: Session) -> List[dict]:
         }
         for row in query
     ]
-
-
-# FUNCIONES PARA PROVEEDORES
-# ==========================
-
-
-def create_supplier(db: Session, supplier: SupplierCreate) -> Supplier:
-    """
-    Crear un nuevo proveedor
-    """
-    db_supplier = Supplier(
-        name=supplier.name,
-        address=supplier.address,
-        phone_number=supplier.phone_number,
-        email=supplier.email,
-        contact_person=supplier.contact_person,
-    )
-    db.add(db_supplier)
-    db.commit()
-    db.refresh(db_supplier)
-    return db_supplier
-
-
-def get_suppliers(db: Session, skip: int = 0, limit: int = 100) -> List[Supplier]:
-    """
-    Obtener lista de proveedores
-    """
-    return db.query(Supplier).offset(skip).limit(limit).all()
-
-
-def get_supplier_by_id(db: Session, supplier_id: str) -> Optional[Supplier]:
-    """
-    Obtener un proveedor por su ID
-    """
-    return db.query(Supplier).filter(Supplier.id == supplier_id).first()
