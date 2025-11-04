@@ -13,14 +13,12 @@ from database import get_db
 from schemas.returns import (
     ReturnCreate,
     ReturnProcessRequest,
-    ReturnResponse,
     ReturnStatsResponse,
     ReturnUpdateStatus,
 )
 from services.returns_service import (
     create_return,
     get_return_by_code,
-    get_return_by_id,
     get_return_full_details,
     get_return_statistics,
     get_returns,
@@ -29,7 +27,7 @@ from services.returns_service import (
     process_return_to_inventory,
     update_return_status,
 )
-from utils.auth import get_current_user, get_current_user_from_db, require_permission
+from utils.auth import get_current_user_from_db, require_permission
 
 router = APIRouter(
     prefix="/returns",

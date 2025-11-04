@@ -5,7 +5,6 @@ Servicio para manejo de devoluciones
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 

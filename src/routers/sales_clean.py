@@ -20,7 +20,6 @@ from services.sales_service import (
     get_best_selling_products,
     get_daily_sales_summary,
     get_sale_by_code,
-    get_sale_by_id,
     get_sale_full_details,
     get_sale_with_returns_info,
     get_sales,
