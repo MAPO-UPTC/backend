@@ -237,6 +237,8 @@ class Sale(Base):
     items: Mapped[list["SaleDetail"]] = relationship(
         "SaleDetail", back_populates="sale", lazy="joined"
     )
+    # Relación con Return
+    returns: Mapped[list["Return"]] = relationship("Return", back_populates="sale")
 
 
 class SaleDetail(Base):
@@ -260,3 +262,79 @@ class SaleDetail(Base):
 
     # Relación con Sale
     sale: Mapped["Sale"] = relationship("Sale", back_populates="items")
+
+
+# MODELOS DE DEVOLUCIONES
+# =====================
+
+
+class Return(Base):
+    __tablename__ = "return"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    return_code: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    return_date: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, default=func.now()
+    )
+    sale_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("sale.id"), nullable=False
+    )
+    customer_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("person.id"), nullable=False
+    )
+    processed_by_user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("user.id"), nullable=False
+    )
+    reason: Mapped[str] = mapped_column(String, nullable=False)
+    total_refund: Mapped[float] = mapped_column(Float, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String, nullable=False, default="pending"
+    )  # pending, approved, rejected, completed
+    notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, default=func.now()
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime, nullable=False, default=func.now(), onupdate=func.now()
+    )
+
+    # Relaciones
+    sale: Mapped["Sale"] = relationship("Sale", back_populates="returns")
+    customer: Mapped["Person"] = relationship("Person", foreign_keys=[customer_id])
+    processed_by: Mapped["User"] = relationship(
+        "User", foreign_keys=[processed_by_user_id]
+    )
+    items: Mapped[list["ReturnDetail"]] = relationship(
+        "ReturnDetail", back_populates="return_record", lazy="joined"
+    )
+
+
+class ReturnDetail(Base):
+    __tablename__ = "return_detail"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    return_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("return.id"), nullable=False
+    )
+    sale_detail_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("sale_detail.id"), nullable=False
+    )
+    presentation_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("product_presentation.id"), nullable=False
+    )
+    quantity_returned: Mapped[int] = mapped_column(Integer, nullable=False)
+    unit_price: Mapped[float] = mapped_column(Float, nullable=False)
+    refund_amount: Mapped[float] = mapped_column(Float, nullable=False)
+    condition: Mapped[str] = mapped_column(
+        String, nullable=False
+    )  # good, damaged, expired
+    restocked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    lot_detail_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        Uuid, ForeignKey("lot_detail.id"), nullable=True
+    )
+    bulk_conversion_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        Uuid, ForeignKey("bulk_conversion.id"), nullable=True
+    )
+
+    # Relaciones
+    return_record: Mapped["Return"] = relationship("Return", back_populates="items")
+    sale_detail: Mapped["SaleDetail"] = relationship("SaleDetail")
+    presentation: Mapped["ProductPresentation"] = relationship("ProductPresentation")

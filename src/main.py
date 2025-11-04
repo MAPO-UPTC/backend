@@ -24,6 +24,7 @@ from routers import (
     person,
     product,
     reports,
+    returns,
     role_management,
     sales_clean,
     supplier,
@@ -182,6 +183,7 @@ app.include_router(person.router, prefix="/persons", tags=["persons"])
 app.include_router(inventory.router, tags=["inventory"])
 app.include_router(supplier.router, tags=["suppliers"])
 app.include_router(sales_clean.router, tags=["sales"])
+app.include_router(returns.router, tags=["returns"])
 app.include_router(reports.router, tags=["reports"])
 app.include_router(role_management.router, tags=["role-management"])
 

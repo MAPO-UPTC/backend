@@ -14,6 +14,8 @@ from models_db import (
     Person,
     Product,
     ProductPresentation,
+    Return,
+    ReturnDetail,
     Sale,
     SaleDetail,
     User,
@@ -221,6 +223,79 @@ def get_sale_by_id(db: Session, sale_id: str) -> Optional[Sale]:
     Obtener una venta por su ID con sus detalles
     """
     return db.query(Sale).filter(Sale.id == sale_id).first()
+
+
+def get_sale_with_returns_info(db: Session, sale_id: str) -> Optional[dict]:
+    """
+    Obtener una venta por su ID incluyendo información de devoluciones
+    y cantidades netas por item
+    """
+    sale = db.query(Sale).filter(Sale.id == sale_id).first()
+
+    if not sale:
+        return None
+
+    # Calcular total reembolsado de devoluciones aprobadas/completadas
+    total_refunded = (
+        db.query(func.sum(Return.total_refund))
+        .filter(Return.sale_id == sale_id, Return.status.in_(["approved", "completed"]))
+        .scalar()
+        or 0.0
+    )
+
+    # Obtener todas las devoluciones completadas o aprobadas de esta venta
+    returns_query = (
+        db.query(ReturnDetail)
+        .join(Return)
+        .filter(Return.sale_id == sale_id, Return.status.in_(["approved", "completed"]))
+    )
+
+    # Crear un diccionario con cantidad devuelta por sale_detail_id
+    returned_quantities = {}
+    for return_detail in returns_query.all():
+        sale_detail_id = str(return_detail.sale_detail_id)
+        if sale_detail_id not in returned_quantities:
+            returned_quantities[sale_detail_id] = 0
+        returned_quantities[sale_detail_id] += return_detail.quantity_returned
+
+    # Procesar items para agregar información de devoluciones
+    items_with_returns = []
+    for item in sale.items:
+        item_id = str(item.id)
+        quantity_returned = returned_quantities.get(item_id, 0)
+        quantity_net = item.quantity - quantity_returned
+
+        # Crear un diccionario del item con la info de devoluciones
+        item_dict = {
+            "id": item.id,
+            "sale_id": item.sale_id,
+            "presentation_id": item.presentation_id,
+            "lot_detail_id": item.lot_detail_id,
+            "bulk_conversion_id": item.bulk_conversion_id,
+            "quantity": item.quantity,  # Cantidad original
+            "quantity_returned": quantity_returned,  # Cantidad devuelta
+            "quantity_net": quantity_net,  # Cantidad neta
+            "unit_price": item.unit_price,
+            "line_total": item.line_total,
+        }
+        items_with_returns.append(item_dict)
+
+    # Crear diccionario con la información de la venta
+    sale_dict = {
+        "id": sale.id,
+        "sale_code": sale.sale_code,
+        "sale_date": sale.sale_date,
+        "customer_id": sale.customer_id,
+        "user_id": sale.user_id,
+        "total": sale.total,
+        "total_refunded": float(total_refunded),
+        "total_net": sale.total - float(total_refunded),
+        "has_returns": total_refunded > 0,
+        "status": sale.status,
+        "items": items_with_returns,  # Items con información de devoluciones
+    }
+
+    return sale_dict
 
 
 def get_sale_by_code(db: Session, sale_code: str) -> Optional[Sale]:
@@ -478,6 +553,7 @@ def get_sale_full_details(db: Session, sale_id: str) -> dict:
     - Información del cliente
     - Información del vendedor
     - Detalles de items con nombre del producto y precio de costo
+    - Cantidad devuelta y cantidad neta (vendida - devuelta)
 
     Returns:
         dict con toda la información de la venta o None si no existe
@@ -515,9 +591,39 @@ def get_sale_full_details(db: Session, sale_id: str) -> dict:
         .all()
     )
 
-    # Construir respuesta con items extendidos
+    # Obtener todas las devoluciones completadas o aprobadas de esta venta
+    returns_query = (
+        db.query(ReturnDetail)
+        .join(Return)
+        .filter(
+            Return.sale_id == sale_id,
+            Return.status.in_(
+                ["approved", "completed"]
+            ),  # Solo contar devoluciones activas
+        )
+    )
+
+    # Crear un diccionario con cantidad devuelta por sale_detail_id
+    returned_quantities = {}
+    for return_detail in returns_query.all():
+        sale_detail_id = str(return_detail.sale_detail_id)
+        if sale_detail_id not in returned_quantities:
+            returned_quantities[sale_detail_id] = 0
+        returned_quantities[sale_detail_id] += return_detail.quantity_returned
+
+    # Construir respuesta con items extendidos incluyendo devoluciones
     items_extended = []
+    total_refunded = 0.0
+
     for detail, product_name, presentation_name, cost_price in sale_details:
+        sale_detail_id = str(detail.id)
+        quantity_returned = returned_quantities.get(sale_detail_id, 0)
+        quantity_net = detail.quantity - quantity_returned
+        refund_amount = quantity_returned * detail.unit_price
+        line_total_net = quantity_net * detail.unit_price
+
+        total_refunded += refund_amount
+
         items_extended.append(
             {
                 "id": detail.id,
@@ -525,15 +631,22 @@ def get_sale_full_details(db: Session, sale_id: str) -> dict:
                 "presentation_id": detail.presentation_id,
                 "lot_detail_id": detail.lot_detail_id,
                 "bulk_conversion_id": detail.bulk_conversion_id,
-                "quantity": detail.quantity,
+                "quantity": detail.quantity,  # Cantidad original vendida
+                "quantity_returned": quantity_returned,  # Cantidad devuelta
+                "quantity_net": quantity_net,  # Cantidad neta (vendida - devuelta)
                 "unit_price": detail.unit_price,
-                "line_total": detail.line_total,
+                "line_total": detail.line_total,  # Total original
+                "line_total_net": line_total_net,  # Total neto después de devoluciones
+                "refund_amount": refund_amount,  # Monto reembolsado
                 "product_name": product_name,
                 "presentation_name": presentation_name,
                 "cost_price": cost_price
                 or 0.0,  # Si es granel podría no tener cost_price directo
             }
         )
+
+    # Calcular el total neto de la venta
+    total_net = sale.total - total_refunded
 
     # Construir respuesta completa
     return {
@@ -542,8 +655,11 @@ def get_sale_full_details(db: Session, sale_id: str) -> dict:
         "sale_date": sale.sale_date,
         "customer_id": sale.customer_id,
         "user_id": sale.user_id,
-        "total": sale.total,
+        "total": sale.total,  # Total original
+        "total_refunded": total_refunded,  # Total reembolsado
+        "total_net": total_net,  # Total neto (original - reembolsos)
         "status": sale.status,
+        "has_returns": total_refunded > 0,  # Indica si tiene devoluciones
         "customer_name": (
             f"{customer.name} {customer.last_name}"
             if customer

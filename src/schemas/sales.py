@@ -42,16 +42,21 @@ class SaleDetailResponse(BaseModel):
     lot_detail_id: Optional[uuid.UUID] = None
     bulk_conversion_id: Optional[uuid.UUID] = None
     quantity: int
+    quantity_returned: int = Field(default=0, description="Cantidad devuelta")
+    quantity_net: int = Field(
+        default=0, description="Cantidad neta (vendida - devuelta)"
+    )
     unit_price: float
     line_total: float
 
     class Config:
-        from_attributes = True
+        # No usar from_attributes porque devolvemos diccionarios, no objetos ORM
+        pass
 
 
 class SaleDetailExtended(BaseModel):
     """
-    Detalle de venta extendido con información del producto
+    Detalle de venta extendido con información del producto y devoluciones
     """
 
     id: uuid.UUID
@@ -60,8 +65,16 @@ class SaleDetailExtended(BaseModel):
     lot_detail_id: Optional[uuid.UUID] = None
     bulk_conversion_id: Optional[uuid.UUID] = None
     quantity: int
+    quantity_returned: int = Field(default=0, description="Cantidad devuelta")
+    quantity_net: int = Field(
+        default=0, description="Cantidad neta (vendida - devuelta)"
+    )
     unit_price: float
     line_total: float
+    line_total_net: float = Field(
+        default=0.0, description="Total neto después de devoluciones"
+    )
+    refund_amount: float = Field(default=0.0, description="Monto reembolsado")
 
     # Información del producto
     product_name: str = Field(..., description="Nombre del producto")
@@ -79,16 +92,22 @@ class SaleResponse(BaseModel):
     customer_id: uuid.UUID
     user_id: uuid.UUID
     total: float
+    total_refunded: float = Field(
+        default=0.0, description="Total reembolsado por devoluciones"
+    )
+    total_net: float = Field(default=0.0, description="Total neto (total - reembolsos)")
+    has_returns: bool = Field(default=False, description="Indica si tiene devoluciones")
     status: str
     items: List[SaleDetailResponse] = Field(default=[])
 
     class Config:
-        from_attributes = True
+        # No usar from_attributes porque devolvemos diccionarios, no objetos ORM
+        pass
 
 
 class SaleDetailFullResponse(BaseModel):
     """
-    Respuesta completa de una venta con detalles extendidos de productos
+    Respuesta completa de una venta con detalles extendidos de productos y devoluciones
     """
 
     id: uuid.UUID
@@ -97,6 +116,11 @@ class SaleDetailFullResponse(BaseModel):
     customer_id: uuid.UUID
     user_id: uuid.UUID
     total: float
+    total_refunded: float = Field(
+        default=0.0, description="Total reembolsado por devoluciones"
+    )
+    total_net: float = Field(default=0.0, description="Total neto (total - reembolsos)")
+    has_returns: bool = Field(default=False, description="Indica si tiene devoluciones")
     status: str
 
     # Información del cliente

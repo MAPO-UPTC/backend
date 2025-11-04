@@ -22,6 +22,7 @@ from services.sales_service import (
     get_sale_by_code,
     get_sale_by_id,
     get_sale_full_details,
+    get_sale_with_returns_info,
     get_sales,
     get_sales_report,
 )
@@ -237,10 +238,16 @@ async def get_sale_by_id_endpoint(
     current_user=Depends(get_current_user_from_db),
 ):
     """
-    Obtener una venta específica por ID
+    Obtener una venta específica por ID con información de devoluciones.
+
+    Incluye:
+    - total: Total original de la venta
+    - total_refunded: Total reembolsado por devoluciones
+    - total_net: Total neto (total - reembolsos)
+    - has_returns: Indica si tiene devoluciones
     """
     try:
-        sale = get_sale_by_id(db, sale_id)
+        sale = get_sale_with_returns_info(db, sale_id)
         if not sale:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
