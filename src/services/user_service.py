@@ -141,8 +141,27 @@ def get_users_service():
     Servicio para obtener todos los usuarios con sus datos de persona.
     """
     with Session(engine) as session:
-        users = session.query(User).join(Person).all()
-        return users
+        users = (
+            session.query(User)
+            .options(selectinload(User.person))
+            .all()
+        )
+        # Convertir a dict para evitar DetachedInstanceError
+        return [
+            {
+                "id": user.id,
+                "email": user.email,
+                "uid": user.uid,
+                "person": {
+                    "id": user.person.id,
+                    "name": user.person.name,
+                    "last_name": user.person.last_name,
+                    "document_type": user.person.document_type,
+                    "document_number": user.person.document_number,
+                },
+            }
+            for user in users
+        ]
 
 
 def get_user_by_id_service(user_id: str):
@@ -150,10 +169,28 @@ def get_user_by_id_service(user_id: str):
     Servicio para obtener un usuario por ID con sus datos de persona.
     """
     with Session(engine) as session:
-        user = session.query(User).join(Person).filter(User.id == user_id).first()
+        user = (
+            session.query(User)
+            .options(selectinload(User.person))
+            .filter(User.id == user_id)
+            .first()
+        )
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        return user
+        
+        # Convertir a dict para evitar DetachedInstanceError
+        return {
+            "id": user.id,
+            "email": user.email,
+            "uid": user.uid,
+            "person": {
+                "id": user.person.id,
+                "name": user.person.name,
+                "last_name": user.person.last_name,
+                "document_type": user.person.document_type,
+                "document_number": user.person.document_number,
+            },
+        }
 
 
 def update_user_service(user_id: str, user_data: dict):
@@ -188,32 +225,22 @@ def login_service(email: str, password: str):
     """
     Servicio para login con email y contraseña que incluye permisos.
     """
-    print("Attempting login...")
     try:
         # Login en Firebase
         firebase_user = auth.sign_in_with_email_and_password(email, password)
 
         # Obtener usuario de la base de datos con eager loading de la persona
         with Session(engine) as session:
-            print(f"Buscando usuario con email: {email}")
-            try:
-                user = (
-                    session.query(User)
-                    .options(selectinload(User.person))
-                    .filter(User.email == email)
-                    .first()
-                )
-                print(f"Usuario encontrado: {user}")
-            except Exception as e:
-                print(f"Error en consulta de base de datos: {e}")
-                raise HTTPException(status_code=400, detail="Database query error")
+            user = (
+                session.query(User)
+                .options(selectinload(User.person))
+                .filter(User.email == email)
+                .first()
+            )
 
             if user:
-                print(f"Usuario ID: {user.id}, Person ID: {user.person_id}")
                 # Obtener roles
-                print("Obteniendo roles del usuario...")
                 user_roles = session.query(UserRole).filter_by(user_id=user.id).all()
-                print(f"Roles encontrados: {len(user_roles)}")
                 roles = []
 
                 for user_role in user_roles:
@@ -223,9 +250,7 @@ def login_service(email: str, password: str):
                         if role_enum:
                             roles.append(role_enum)
 
-                print(f"Roles procesados: {roles}")
                 # Calcular permisos combinados
-                print("Calculando permisos...")
                 all_permissions = {}
                 for role in roles:
                     role_permissions = PermissionManager.get_user_permissions(role)
@@ -245,10 +270,6 @@ def login_service(email: str, password: str):
                                 "OWN",
                             ]:
                                 all_permissions[entity][action] = level
-
-                print("Preparando respuesta...")
-                print(f"User person: {user.person}")
-                print(f"User email: {user.email}")
                 return {
                     "message": "Login successful",
                     "idToken": firebase_user["idToken"],
@@ -276,3 +297,96 @@ def login_service(email: str, password: str):
 
         print(f"Stack trace: {traceback.format_exc()}")
         raise HTTPException(status_code=400, detail="Invalid credentials")
+
+
+def request_password_reset_service(email: str):
+    """
+    Servicio para solicitar cambio de contraseña.
+    Genera un código y lo envía por email.
+    """
+    from services.email_service import (
+        generate_reset_code,
+        send_password_reset_email,
+        store_reset_code,
+    )
+
+    print(f"Solicitando cambio de contraseña para: {email}")
+
+    # Verificar que el usuario existe en la base de datos
+    with Session(engine) as session:
+        user = session.query(User).filter(User.email == email).first()
+        if not user:
+            # Por seguridad, no revelar si el email existe o no
+            # Siempre retornar el mismo mensaje
+            return {
+                "message": "Si el email está registrado, recibirás un código de recuperación.",
+                "email": email,
+            }
+
+    # Generar código de 6 dígitos
+    reset_code = generate_reset_code()
+
+    # Almacenar código
+    store_reset_code(email, reset_code)
+
+    # Enviar email
+    try:
+        send_password_reset_email(email, reset_code)
+        print(f"✅ Código de recuperación enviado a: {email}")
+    except Exception as e:
+        print(f"❌ Error enviando email: {str(e)}")
+        # En desarrollo, continuar aunque falle el email
+        # En producción, podrías querer lanzar error
+
+    return {
+        "message": "Si el email está registrado, recibirás un código de recuperación.",
+        "email": email,
+    }
+
+
+def reset_password_service(email: str, reset_code: str, new_password: str):
+    """
+    Servicio para cambiar la contraseña usando el código de recuperación.
+    """
+    from services.email_service import clear_reset_code, validate_reset_code
+
+    print(f"Intentando cambiar contraseña para: {email}")
+
+    # Validar código
+    validate_reset_code(email, reset_code)
+
+    # Verificar que el usuario existe
+    with Session(engine) as session:
+        user = session.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Cambiar contraseña en Firebase
+        try:
+            import firebase_admin
+            from firebase_admin import auth as admin_auth
+
+            if not firebase_admin._apps:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Firebase not configured properly"
+                )
+
+            # Actualizar contraseña usando Firebase Admin SDK
+            admin_auth.update_user(user.firebase_uid, password=new_password)
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error updating password in Firebase: {str(e)}"
+            )
+
+    # Limpiar código usado
+    clear_reset_code(email)
+
+    return {
+        "message": "Password updated successfully",
+        "email": email,
+    }
