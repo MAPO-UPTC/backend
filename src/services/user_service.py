@@ -141,11 +141,7 @@ def get_users_service():
     Servicio para obtener todos los usuarios con sus datos de persona.
     """
     with Session(engine) as session:
-        users = (
-            session.query(User)
-            .options(selectinload(User.person))
-            .all()
-        )
+        users = session.query(User).options(selectinload(User.person)).all()
         # Convertir a dict para evitar DetachedInstanceError
         return [
             {
@@ -177,7 +173,7 @@ def get_user_by_id_service(user_id: str):
         )
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        
+
         # Convertir a dict para evitar DetachedInstanceError
         return {
             "id": user.id,
@@ -368,8 +364,7 @@ def reset_password_service(email: str, reset_code: str, new_password: str):
 
             if not firebase_admin._apps:
                 raise HTTPException(
-                    status_code=500,
-                    detail="Firebase not configured properly"
+                    status_code=500, detail="Firebase not configured properly"
                 )
 
             # Actualizar contraseña usando Firebase Admin SDK
@@ -379,8 +374,7 @@ def reset_password_service(email: str, reset_code: str, new_password: str):
             raise
         except Exception as e:
             raise HTTPException(
-                status_code=500,
-                detail=f"Error updating password in Firebase: {str(e)}"
+                status_code=500, detail=f"Error updating password in Firebase: {str(e)}"
             )
 
     # Limpiar código usado

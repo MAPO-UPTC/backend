@@ -55,7 +55,8 @@ def validate_reset_code(email: str, code: str) -> bool:
     """
     if email not in PASSWORD_RESET_CODES:
         raise HTTPException(
-            status_code=400, detail="No se ha solicitado cambio de contraseña para este email"
+            status_code=400,
+            detail="No se ha solicitado cambio de contraseña para este email",
         )
 
     stored_data = PASSWORD_RESET_CODES[email]
@@ -64,7 +65,8 @@ def validate_reset_code(email: str, code: str) -> bool:
     if datetime.now() > stored_data["expires_at"]:
         del PASSWORD_RESET_CODES[email]
         raise HTTPException(
-            status_code=400, detail="El código de recuperación ha expirado. Solicite uno nuevo."
+            status_code=400,
+            detail="El código de recuperación ha expirado. Solicite uno nuevo.",
         )
 
     # Verificar intentos
@@ -91,7 +93,9 @@ def clear_reset_code(email: str) -> None:
         del PASSWORD_RESET_CODES[email]
 
 
-def send_email(to_email: str, subject: str, html_body: str, text_body: Optional[str] = None) -> bool:
+def send_email(
+    to_email: str, subject: str, html_body: str, text_body: Optional[str] = None
+) -> bool:
     """
     Enviar correo electrónico usando SMTP
     """
