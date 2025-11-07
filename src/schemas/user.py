@@ -67,6 +67,17 @@ class ActiveRoleResponse(BaseModel):
     permissions: dict
 
 
+# Esquemas para recuperación de contraseña
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    email: EmailStr
+    reset_code: str
+    new_password: str
+
+
 # Comentado - Login con Google (no se usará por ahora)
 # class GoogleLoginRequest(BaseModel):
 #     token: str

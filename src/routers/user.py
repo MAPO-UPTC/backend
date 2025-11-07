@@ -8,6 +8,8 @@ from constants.role import RoleEnum
 from schemas.user import (
     ActiveRoleResponse,
     LoginSchema,
+    PasswordResetConfirm,
+    PasswordResetRequest,
     SignUpSchema,
     SwitchRoleSchema,
     UserResponse,
@@ -18,6 +20,8 @@ from services.user_service import (
     get_user_by_id_service,
     get_users_service,
     login_service,
+    request_password_reset_service,
+    reset_password_service,
     update_user_service,
 )
 from utils.auth import (
@@ -180,6 +184,27 @@ async def get_active_role(user=Depends(get_user_with_permissions)):
         active_role=user.active_role.value if user.active_role else None,
         available_roles=[role.value for role in user.roles],
         permissions=user.permissions,
+    )
+
+
+@router.post("/request-password-reset")
+async def request_password_reset(request_data: PasswordResetRequest):
+    """
+    Solicitar cambio de contraseña.
+    Envía un código de 6 dígitos al email del usuario.
+    Endpoint público - no requiere autenticación.
+    """
+    return request_password_reset_service(request_data.email)
+
+
+@router.post("/reset-password")
+async def reset_password(reset_data: PasswordResetConfirm):
+    """
+    Confirmar cambio de contraseña usando el código recibido por email.
+    Endpoint público - no requiere autenticación.
+    """
+    return reset_password_service(
+        reset_data.email, reset_data.reset_code, reset_data.new_password
     )
 
 
