@@ -1,5 +1,4 @@
 import uuid
-from typing import List
 
 from fastapi import APIRouter, Body, Depends
 from sqlalchemy import text
@@ -255,12 +254,28 @@ async def create_product(
     return create_product_service(product_data)
 
 
-@router.get("/", response_model=List[dict])
-async def get_products():
+@router.get("/", response_model=dict)
+async def get_products(
+    page: int = 1,
+    page_size: int = 50,
+    search: str = None,
+    category_id: str = None,
+):
     """
-    Obtener todos los productos (público).
+    Obtener productos con paginación.
+
+    - **page**: Número de página (default: 1)
+    - **page_size**: Productos por página (default: 50, max: 100)
+    - **search**: Búsqueda por nombre o marca (opcional)
+    - **category_id**: Filtrar por categoría (opcional)
     """
-    return get_products_service()
+    # Validar page_size máximo
+    if page_size > 100:
+        page_size = 100
+
+    return get_products_service(
+        page=page, page_size=page_size, search=search, category_id=category_id
+    )
 
 
 @router.get("/{product_id}", response_model=dict)

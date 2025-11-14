@@ -187,24 +187,44 @@ def create_product_service(product_data: ProductCreate):
         raise HTTPException(status_code=400, detail=f"Error creating product: {str(e)}")
 
 
-def get_products_service():
+def get_products_service(
+    page: int = 1, page_size: int = 50, search: str = None, category_id: str = None
+):
     """
-    Servicio optimizado para obtener todos los productos con información de stock disponible,
-    incluyendo stock a granel (BulkConversion).
-    Usa una sola query para calcular todo el stock de una vez.
+    Servicio optimizado para obtener productos con paginación, búsqueda y filtros.
+    Incluye información de stock disponible y stock a granel (BulkConversion).
     """
-    from sqlalchemy import func
+    from sqlalchemy import func, or_
     from sqlalchemy.orm import joinedload
 
     from models_db import BulkConversion, LotDetail
 
     with Session(engine) as session:
-        # 1. Obtener todos los productos con sus presentaciones en una sola query
-        products = (
-            session.query(Product).options(joinedload(Product.presentations)).all()
-        )
+        # 1. Construir query base
+        query = session.query(Product).options(joinedload(Product.presentations))
 
-        # 2. Calcular stock regular por presentación (una sola query)
+        # 2. Aplicar filtros
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                or_(
+                    Product.name.ilike(search_pattern),
+                    Product.brand.ilike(search_pattern),
+                    Product.description.ilike(search_pattern),
+                )
+            )
+
+        if category_id:
+            query = query.filter(Product.category_id == category_id)
+
+        # 3. Obtener total de productos (antes de paginar)
+        total_products = query.count()
+
+        # 4. Calcular offset y aplicar paginación
+        offset = (page - 1) * page_size
+        products = query.offset(offset).limit(page_size).all()
+
+        # 5. Calcular stock regular por presentación (una sola query)
         stock_query = (
             session.query(
                 LotDetail.presentation_id,
@@ -215,7 +235,7 @@ def get_products_service():
         )
         stock_map = {str(pres_id): int(stock) for pres_id, stock in stock_query}
 
-        # 3. Calcular stock a granel por presentación (una sola query)
+        # 6. Calcular stock a granel por presentación (una sola query)
         bulk_query = (
             session.query(
                 BulkConversion.target_presentation_id,
@@ -227,7 +247,7 @@ def get_products_service():
         )
         bulk_map = {str(pres_id): int(bulk) for pres_id, bulk in bulk_query}
 
-        # 4. Construir respuesta usando los datos precalculados
+        # 7. Construir respuesta usando los datos precalculados
         result = []
         for product in products:
             presentations_with_stock = []
@@ -269,7 +289,20 @@ def get_products_service():
                 }
             )
 
-        return result
+        # 5. Calcular metadata de paginación
+        total_pages = (total_products + page_size - 1) // page_size
+
+        return {
+            "products": result,
+            "pagination": {
+                "page": page,
+                "page_size": page_size,
+                "total_products": total_products,
+                "total_pages": total_pages,
+                "has_next": page < total_pages,
+                "has_prev": page > 1,
+            },
+        }
 
 
 def get_product_by_id_service(product_id: uuid.UUID):
